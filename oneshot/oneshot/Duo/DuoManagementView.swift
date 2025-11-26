@@ -1,0 +1,660 @@
+import SwiftUI
+
+struct DuoManagementView: View {
+    @EnvironmentObject var appState: AppState
+    @State private var showInviteSheet = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    if let duo = appState.currentDuo {
+                        // Has a duo - show duo info
+                        CurrentDuoSection(duo: duo)
+                    } else {
+                        // No duo - show options
+                        NoDuoSection(
+                            pendingInvites: appState.pendingInvites,
+                            showInviteSheet: $showInviteSheet,
+                            onAcceptInvite: { appState.acceptInvite($0) },
+                            onDeclineInvite: { appState.declineInvite($0) }
+                        )
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Your Duo")
+            .navigationBarTitleDisplayMode(.large)
+            .sheet(isPresented: $showInviteSheet) {
+                InviteFriendView()
+            }
+        }
+    }
+}
+
+// MARK: - Current Duo Section
+struct CurrentDuoSection: View {
+    @EnvironmentObject var appState: AppState
+    let duo: Duo
+    @State private var showLeaveAlert = false
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Duo Partner Card
+            VStack(spacing: 16) {
+                Text("Your Duo Partner")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if let partner = duo.user1?.id == appState.currentUser?.id ? duo.user2 : duo.user1 {
+                    DuoPartnerCard(user: partner)
+                }
+            }
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            // Duo Profile Preview
+            NavigationLink(destination: DuoPreviewView(duo: duo)) {
+                HStack {
+                    Image(systemName: "eye.fill")
+                        .foregroundColor(.pink)
+
+                    VStack(alignment: .leading) {
+                        Text("Preview Duo Profile")
+                            .font(.headline)
+                        Text("See how others view your duo")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+
+            // Edit Duo Bio
+            NavigationLink(destination: EditDuoBioView(duo: duo)) {
+                HStack {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.pink)
+
+                    VStack(alignment: .leading) {
+                        Text("Edit Duo Bio")
+                            .font(.headline)
+                        Text("Customize your duo's profile")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+
+            // Leave Duo
+            Button {
+                showLeaveAlert = true
+            } label: {
+                HStack {
+                    Image(systemName: "person.badge.minus")
+                        .foregroundColor(.red)
+
+                    Text("Leave Duo")
+                        .foregroundColor(.red)
+
+                    Spacer()
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .alert("Leave Duo?", isPresented: $showLeaveAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Leave", role: .destructive) {
+                    appState.leaveDuo()
+                }
+            } message: {
+                Text("Are you sure you want to leave your duo? You won't be able to swipe until you join another duo.")
+            }
+        }
+    }
+}
+
+// MARK: - Duo Partner Card
+struct DuoPartnerCard: View {
+    let user: UserSummary
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // Photo
+            if let photo = user.photos.first {
+                AsyncImage(url: URL(string: photo.url)) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(Color.pink.opacity(0.2))
+                        .overlay {
+                            Text(user.firstName.prefix(1))
+                                .font(.title)
+                                .foregroundColor(.pink)
+                        }
+                }
+                .frame(width: 80, height: 80)
+                .clipShape(Circle())
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(user.firstName)
+                    .font(.title3.bold())
+
+                Text("\(user.age) years old")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if let university = user.university {
+                    Text(university)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - No Duo Section
+struct NoDuoSection: View {
+    let pendingInvites: [DuoInvite]
+    @Binding var showInviteSheet: Bool
+    let onAcceptInvite: (DuoInvite) -> Void
+    let onDeclineInvite: (DuoInvite) -> Void
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Invite button
+            Button {
+                showInviteSheet = true
+            } label: {
+                HStack {
+                    Image(systemName: "paperplane.fill")
+                        .font(.title2)
+
+                    VStack(alignment: .leading) {
+                        Text("Invite a Friend")
+                            .font(.headline)
+                        Text("Send an invite to form a duo")
+                            .font(.caption)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                }
+                .padding()
+                .foregroundColor(.white)
+                .background(.pink.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+
+            // Pending invites
+            if !pendingInvites.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Duo Invites")
+                        .font(.headline)
+
+                    ForEach(pendingInvites) { invite in
+                        InviteCard(
+                            invite: invite,
+                            onAccept: { onAcceptInvite(invite) },
+                            onDecline: { onDeclineInvite(invite) }
+                        )
+                    }
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+
+            // Explainer
+            VStack(spacing: 16) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.pink.gradient)
+
+                Text("Why a Duo?")
+                    .font(.headline)
+
+                Text("Dating with a friend makes everything more fun! Match with other duos and go on amazing double dates together.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+            }
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+}
+
+// MARK: - Invite Card
+struct InviteCard: View {
+    let invite: DuoInvite
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Profile image
+            if let user = invite.fromUser, let photo = user.photos.first {
+                AsyncImage(url: URL(string: photo.url)) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                }
+                .frame(width: 50, height: 50)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 50, height: 50)
+                    .overlay {
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(.secondary)
+                    }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(invite.fromUser?.firstName ?? "Someone")
+                    .font(.headline)
+
+                Text("wants to be your duo!")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                Button(action: onDecline) {
+                    Image(systemName: "xmark")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .frame(width: 36, height: 36)
+                        .background(Color(.tertiarySystemBackground))
+                        .clipShape(Circle())
+                }
+
+                Button(action: onAccept) {
+                    Image(systemName: "checkmark")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(.pink)
+                        .clipShape(Circle())
+                }
+            }
+        }
+        .padding()
+        .background(Color(.tertiarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Invite Friend View
+struct InviteFriendView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    @State private var showShareSheet = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Search
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Search by phone or email")
+                        .font(.headline)
+
+                    TextField("Phone number or email", text: $searchText)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+
+                    Button {
+                        // Search and send invite
+                    } label: {
+                        Text("Search & Invite")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(searchText.isEmpty ? Color.gray.opacity(0.3) : .pink)
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(searchText.isEmpty)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                // Divider
+                HStack {
+                    Rectangle()
+                        .fill(Color(.separator))
+                        .frame(height: 1)
+                    Text("or")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Rectangle()
+                        .fill(Color(.separator))
+                        .frame(height: 1)
+                }
+
+                // Share link
+                Button {
+                    showShareSheet = true
+                } label: {
+                    HStack {
+                        Image(systemName: "link")
+                        Text("Share Invite Link")
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .foregroundColor(.pink)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Invite Friend")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ShareSheet(items: ["Join my duo on DuoDating! https://duodating.app/invite/abc123"])
+            }
+        }
+    }
+}
+
+// MARK: - Share Sheet
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Duo Preview View
+struct DuoPreviewView: View {
+    let duo: Duo
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                Text("This is how other duos see you")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.top)
+
+                // Preview card
+                GeometryReader { geometry in
+                    DuoCard(duo: duo, isTop: true)
+                        .frame(height: geometry.size.width * 1.3)
+                }
+                .frame(height: UIScreen.main.bounds.width * 1.3)
+                .padding(.horizontal)
+            }
+        }
+        .navigationTitle("Duo Preview")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Edit Duo Bio View
+struct EditDuoBioView: View {
+    let duo: Duo
+    @Environment(\.dismiss) private var dismiss
+    @State private var duoBio: String = ""
+
+    var body: some View {
+        Form {
+            Section("Duo Bio") {
+                TextEditor(text: $duoBio)
+                    .frame(minHeight: 150)
+            }
+
+            Section {
+                Text("This bio appears on your duo's profile and helps other duos get to know you both!")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("Edit Duo Bio")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    // Save bio
+                    dismiss()
+                }
+            }
+        }
+        .onAppear {
+            duoBio = duo.duoBio
+        }
+    }
+}
+
+// MARK: - Duo Profile View (Other Duo)
+struct DuoProfileView: View {
+    @EnvironmentObject var appState: AppState
+    let duo: Duo
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Photos section - both users
+                TabView {
+                    // Combined photo
+                    HStack(spacing: 0) {
+                        if let user1 = duo.user1 {
+                            UserPhotoView(user: user1, showInfo: false)
+                        }
+                        if let user2 = duo.user2 {
+                            UserPhotoView(user: user2, showInfo: false)
+                        }
+                    }
+                    .frame(height: 400)
+
+                    // User 1 photos
+                    if let user1 = duo.user1 {
+                        ForEach(user1.photos) { photo in
+                            AsyncImage(url: URL(string: photo.url)) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                            }
+                            .frame(height: 400)
+                            .clipped()
+                        }
+                    }
+
+                    // User 2 photos
+                    if let user2 = duo.user2 {
+                        ForEach(user2.photos) { photo in
+                            AsyncImage(url: URL(string: photo.url)) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                            }
+                            .frame(height: 400)
+                            .clipped()
+                        }
+                    }
+                }
+                .tabViewStyle(.page)
+                .frame(height: 400)
+
+                // Info section
+                VStack(alignment: .leading, spacing: 16) {
+                    // Names
+                    if let user1 = duo.user1, let user2 = duo.user2 {
+                        Text("\(user1.firstName), \(user1.age) & \(user2.firstName), \(user2.age)")
+                            .font(.title.bold())
+                    }
+
+                    // University
+                    if let uni = duo.user1?.university ?? duo.user2?.university {
+                        Label(uni, systemImage: "building.columns")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Divider()
+
+                    // Duo bio
+                    if !duo.duoBio.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("About us")
+                                .font(.headline)
+                            Text(duo.duoBio)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Divider()
+
+                    // Individual bios
+                    if let user1 = duo.user1 {
+                        UserBioSection(user: user1)
+                    }
+
+                    if let user2 = duo.user2 {
+                        UserBioSection(user: user2)
+                    }
+
+                    Divider()
+
+                    // Shared interests
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Our Interests")
+                            .font(.headline)
+
+                        FlowLayout(spacing: 8) {
+                            ForEach(duo.combinedInterests) { interest in
+                                Text("\(interest.emoji) \(interest.name)")
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.secondarySystemBackground))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 16) {
+                ActionButton(icon: "xmark", color: .gray, size: 56) {
+                    appState.swipe(.pass, on: duo)
+                }
+
+                ActionButton(icon: "heart.fill", color: .pink, size: 56) {
+                    appState.swipe(.like, on: duo)
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+        }
+    }
+}
+
+// MARK: - User Bio Section
+struct UserBioSection: View {
+    let user: UserSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                if let photo = user.photos.first {
+                    AsyncImage(url: URL(string: photo.url)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                    }
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+                }
+
+                Text(user.firstName)
+                    .font(.headline)
+            }
+
+            if !user.bio.isEmpty {
+                Text(user.bio)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(user.prompts) { prompt in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(prompt.prompt.rawValue)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(prompt.answer)
+                        .font(.subheadline)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        DuoManagementView()
+            .environmentObject(AppState())
+    }
+}
