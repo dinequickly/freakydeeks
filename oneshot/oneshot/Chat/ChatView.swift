@@ -45,24 +45,28 @@ struct ChatView: View {
                 }
             }
 
-            // Icebreaker suggestions
+            // Icebreaker suggestions & Input
             if messages.isEmpty {
                 IcebreakerSuggestions { icebreaker in
                     sendMessage(icebreaker, type: .icebreaker)
                 }
-            }
 
-            // Input bar
-            ChatInputBar(
-                text: $messageText,
-                isFocused: $isInputFocused,
-                onSend: {
-                    sendMessage(messageText)
-                    messageText = ""
-                },
-                onIcebreaker: { showIcebreakers = true },
-                onDateSuggestion: { showDateSuggestion = true }
-            )
+                ForcedIcebreakerView {
+                    showIcebreakers = true
+                }
+            } else {
+                // Input bar
+                ChatInputBar(
+                    text: $messageText,
+                    isFocused: $isInputFocused,
+                    onSend: {
+                        sendMessage(messageText)
+                        messageText = ""
+                    },
+                    onIcebreaker: { showIcebreakers = true },
+                    onDateSuggestion: { showDateSuggestion = true }
+                )
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -528,6 +532,40 @@ struct DateSuggestionView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - Forced Icebreaker View
+struct ForcedIcebreakerView: View {
+    let onOpenPicker: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Divider()
+
+            VStack(spacing: 8) {
+                Text("Start the conversation")
+                    .font(.headline)
+
+                Text("Pick an icebreaker to say hello!")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 8)
+
+            Button(action: onOpenPicker) {
+                Label("Choose Icebreaker", systemImage: "snowflake")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.pink.gradient)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+        }
+        .background(.ultraThinMaterial)
     }
 }
 
