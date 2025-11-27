@@ -62,9 +62,11 @@ class UserService {
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withFullDate]
 
+        let birthdayString = isoFormatter.string(from: birthday)
+
         let update = UserProfileUpdate(
             firstName: firstName,
-            birthday: isoFormatter.string(from: birthday),
+            birthday: birthdayString,
             gender: gender.rawValue,
             genderPreference: genderPreference.rawValue,
             bio: bio,
@@ -72,13 +74,21 @@ class UserService {
             major: major
         )
 
+        print("🔍 Attempting to update user profile:")
+        print("   User ID: \(userId)")
+        print("   Name: \(firstName)")
+        print("   Birthday: \(birthdayString)")
+        print("   Gender: \(gender.rawValue)")
+        print("   Bio: \(bio)")
+
         do {
-            try await supabase.database
+            let response = try await supabase.database
                 .from("users")
                 .update(update)
                 .eq("id", value: userId.uuidString)
                 .execute()
 
+            print("✅ Update response status: \(response.response.statusCode)")
             print("✅ User profile created: \(firstName)")
 
             // Fetch and return complete user
@@ -86,6 +96,7 @@ class UserService {
 
         } catch {
             print("❌ Create profile error: \(error)")
+            print("❌ Error details: \(String(describing: error))")
             throw UserError.createFailed(error.localizedDescription)
         }
     }
@@ -214,21 +225,27 @@ class UserService {
     // MARK: - Photos
 
     private func getPhotos(userId: UUID) async throws -> [Photo] {
-        let response: [PhotoDTO] = try await supabase.database
-            .from("user_photos")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .order("order_index")
-            .execute()
-            .value
+        do {
+            let response: [PhotoDTO] = try await supabase.database
+                .from("user_photos")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .order("order_index")
+                .execute()
+                .value
 
-        return response.map { dto in
-            Photo(
-                id: dto.id,
-                url: dto.url,
-                order: dto.orderIndex,
-                isMain: dto.isMain
-            )
+            return response.map { dto in
+                Photo(
+                    id: dto.id,
+                    url: dto.url,
+                    order: dto.orderIndex,
+                    isMain: dto.isMain
+                )
+            }
+        } catch {
+            // Return empty array if no photos found (not an error condition)
+            print("ℹ️ No photos found for user: \(userId)")
+            return []
         }
     }
 
@@ -236,19 +253,25 @@ class UserService {
 
     /// Get user's interests
     private func getInterests(userId: UUID) async throws -> [Interest] {
-        let response: [InterestDTO] = try await supabase.database
-            .from("interests")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-            .value
+        do {
+            let response: [InterestDTO] = try await supabase.database
+                .from("interests")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+                .value
 
-        return response.map { dto in
-            Interest(
-                id: dto.id,
-                name: dto.name,
-                emoji: dto.emoji
-            )
+            return response.map { dto in
+                Interest(
+                    id: dto.id,
+                    name: dto.name,
+                    emoji: dto.emoji
+                )
+            }
+        } catch {
+            // Return empty array if no interests found
+            print("ℹ️ No interests found for user: \(userId)")
+            return []
         }
     }
 
@@ -302,19 +325,25 @@ class UserService {
 
     /// Get user's profile prompts
     private func getPrompts(userId: UUID) async throws -> [ProfilePrompt] {
-        let response: [ProfilePromptDTO] = try await supabase.database
-            .from("profile_prompts")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-            .value
+        do {
+            let response: [ProfilePromptDTO] = try await supabase.database
+                .from("profile_prompts")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+                .value
 
-        return response.map { dto in
-            ProfilePrompt(
-                id: dto.id,
-                prompt: PromptType(rawValue: dto.promptType) ?? .funFact,
-                answer: dto.answer
-            )
+            return response.map { dto in
+                ProfilePrompt(
+                    id: dto.id,
+                    prompt: PromptType(rawValue: dto.promptType) ?? .funFact,
+                    answer: dto.answer
+                )
+            }
+        } catch {
+            // Return empty array if no prompts found
+            print("ℹ️ No prompts found for user: \(userId)")
+            return []
         }
     }
 
@@ -440,6 +469,32 @@ struct UserDTO: Codable {
         case currentPairId = "current_pair_id"
         case isVerified = "is_verified"
         case createdAt = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        email = try container.decode(String.self, forKey: .email)
+        firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+
+        // Handle birthday - can be string or date
+        if let birthdayString = try? container.decodeIfPresent(String.self, forKey: .birthday) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withFullDate]
+            birthday = formatter.date(from: birthdayString)
+        } else {
+            birthday = try container.decodeIfPresent(Date.self, forKey: .birthday)
+        }
+
+        gender = try container.decodeIfPresent(String.self, forKey: .gender)
+        genderPreference = try container.decodeIfPresent(String.self, forKey: .genderPreference)
+        bio = try container.decodeIfPresent(String.self, forKey: .bio)
+        university = try container.decodeIfPresent(String.self, forKey: .university)
+        major = try container.decodeIfPresent(String.self, forKey: .major)
+        currentPairId = try container.decodeIfPresent(UUID.self, forKey: .currentPairId)
+        isVerified = try container.decode(Bool.self, forKey: .isVerified)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
     }
 }
 

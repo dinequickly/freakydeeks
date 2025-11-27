@@ -36,12 +36,27 @@ class PairService {
             throw PairError.alreadyInPair
         }
 
-        let inviteData: [String: AnyEncodable] = [
-            "from_user_id": AnyEncodable(fromUserId.uuidString),
-            "to_user_id": AnyEncodable(toUserId.uuidString),
-            "message": AnyEncodable(message ?? NSNull()),
-            "status": AnyEncodable("pending")
-        ]
+        // Create properly typed struct for the insert
+        struct InviteInsert: Encodable {
+            let fromUserId: String
+            let toUserId: String
+            let message: String?
+            let status: String
+
+            enum CodingKeys: String, CodingKey {
+                case fromUserId = "from_user_id"
+                case toUserId = "to_user_id"
+                case message
+                case status
+            }
+        }
+
+        let inviteData = InviteInsert(
+            fromUserId: fromUserId.uuidString,
+            toUserId: toUserId.uuidString,
+            message: message,
+            status: "pending"
+        )
 
         do {
             let response: PairInviteDTO = try await supabase.database
