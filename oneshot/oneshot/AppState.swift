@@ -105,6 +105,7 @@ class AppState: ObservableObject {
 
     // MARK: - Onboarding
     func completeOnboarding() async {
+        print("🎯 completeOnboarding() called")
         isLoading = true
         errorMessage = nil
 
@@ -115,6 +116,8 @@ class AppState: ObservableObject {
             isLoading = false
             return
         }
+
+        print("🎯 User ID obtained: \(userId)")
 
         // 1. Create user profile FIRST (so photos can reference it)
         do {

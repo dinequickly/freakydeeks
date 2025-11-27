@@ -62,9 +62,11 @@ class UserService {
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withFullDate]
 
+        let birthdayString = isoFormatter.string(from: birthday)
+
         let update = UserProfileUpdate(
             firstName: firstName,
-            birthday: isoFormatter.string(from: birthday),
+            birthday: birthdayString,
             gender: gender.rawValue,
             genderPreference: genderPreference.rawValue,
             bio: bio,
@@ -72,13 +74,21 @@ class UserService {
             major: major
         )
 
+        print("🔍 Attempting to update user profile:")
+        print("   User ID: \(userId)")
+        print("   Name: \(firstName)")
+        print("   Birthday: \(birthdayString)")
+        print("   Gender: \(gender.rawValue)")
+        print("   Bio: \(bio)")
+
         do {
-            try await supabase.database
+            let response = try await supabase.database
                 .from("users")
                 .update(update)
                 .eq("id", value: userId.uuidString)
                 .execute()
 
+            print("✅ Update response status: \(response.response.statusCode)")
             print("✅ User profile created: \(firstName)")
 
             // Fetch and return complete user
@@ -86,6 +96,7 @@ class UserService {
 
         } catch {
             print("❌ Create profile error: \(error)")
+            print("❌ Error details: \(String(describing: error))")
             throw UserError.createFailed(error.localizedDescription)
         }
     }
@@ -458,6 +469,32 @@ struct UserDTO: Codable {
         case currentPairId = "current_pair_id"
         case isVerified = "is_verified"
         case createdAt = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        email = try container.decode(String.self, forKey: .email)
+        firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+
+        // Handle birthday - can be string or date
+        if let birthdayString = try? container.decodeIfPresent(String.self, forKey: .birthday) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withFullDate]
+            birthday = formatter.date(from: birthdayString)
+        } else {
+            birthday = try container.decodeIfPresent(Date.self, forKey: .birthday)
+        }
+
+        gender = try container.decodeIfPresent(String.self, forKey: .gender)
+        genderPreference = try container.decodeIfPresent(String.self, forKey: .genderPreference)
+        bio = try container.decodeIfPresent(String.self, forKey: .bio)
+        university = try container.decodeIfPresent(String.self, forKey: .university)
+        major = try container.decodeIfPresent(String.self, forKey: .major)
+        currentPairId = try container.decodeIfPresent(UUID.self, forKey: .currentPairId)
+        isVerified = try container.decode(Bool.self, forKey: .isVerified)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
     }
 }
 

@@ -325,35 +325,65 @@ struct InviteCard: View {
 
 // MARK: - Invite Friend View
 struct InviteFriendView: View {
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var showShareSheet = false
+    @State private var isSearching = false
+    @State private var searchResult: UserSummary?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
                 // Search
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Search by phone or email")
+                    Text("Search by email")
                         .font(.headline)
 
-                    TextField("Phone number or email", text: $searchText)
+                    TextField("Email address", text: $searchText)
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
+                        .autocorrectionDisabled()
 
                     Button {
-                        // Search and send invite
+                        Task {
+                            await searchAndInviteUser()
+                        }
                     } label: {
-                        Text("Search & Invite")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(searchText.isEmpty ? Color.gray.opacity(0.3) : .pink)
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        if isSearching {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        } else {
+                            Text("Search & Invite")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
                     }
-                    .disabled(searchText.isEmpty)
+                    .background(searchText.isEmpty || isSearching ? Color.gray.opacity(0.3) : .pink)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(searchText.isEmpty || isSearching)
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+
+                    if let result = searchResult {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Invite sent to \(result.firstName)!")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                    }
                 }
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground))
@@ -402,6 +432,59 @@ struct InviteFriendView: View {
                 ShareSheet(items: ["Join my duo on DuoDating! https://duodating.app/invite/abc123"])
             }
         }
+    }
+
+    private func searchAndInviteUser() async {
+        guard let currentUserId = appState.currentUser?.id else {
+            errorMessage = "You must be logged in to send invites"
+            return
+        }
+
+        isSearching = true
+        errorMessage = nil
+        searchResult = nil
+
+        do {
+            // Search for user by email
+            guard let foundUser = try await ServiceContainer.shared.userService.searchUserByEmail(email: searchText) else {
+                errorMessage = "No user found with email: \(searchText)"
+                isSearching = false
+                return
+            }
+
+            // Check if trying to invite self
+            if foundUser.id == currentUserId {
+                errorMessage = "You can't invite yourself!"
+                isSearching = false
+                return
+            }
+
+            // Send invite
+            let invite = try await ServiceContainer.shared.pairService.sendInvite(
+                fromUserId: currentUserId,
+                toUserId: foundUser.id
+            )
+
+            // Update app state
+            appState.outgoingInvites.append(invite)
+
+            // Show success
+            searchResult = foundUser
+            searchText = ""
+
+            print("✅ Invite sent successfully to \(foundUser.firstName)")
+
+            // Auto-dismiss after 2 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                dismiss()
+            }
+
+        } catch {
+            errorMessage = "Failed to send invite: \(error.localizedDescription)"
+            print("❌ Send invite error: \(error)")
+        }
+
+        isSearching = false
     }
 }
 
