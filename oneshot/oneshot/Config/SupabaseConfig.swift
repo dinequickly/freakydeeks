@@ -42,13 +42,8 @@ class SupabaseConfig {
     // MARK: - Convenience Accessors
 
     /// Quick access to auth client
-    var auth: GoTrueClient {
+    var auth: AuthClient {
         client.auth
-    }
-
-    /// Quick access to database client
-    var database: PostgrestClient {
-        client.database
     }
 
     /// Quick access to storage client
@@ -57,8 +52,8 @@ class SupabaseConfig {
     }
 
     /// Quick access to realtime client (for future use)
-    var realtime: RealtimeClient {
-        client.realtime
+    var realtime: RealtimeClientV2 {
+        client.realtimeV2
     }
 
     // MARK: - Storage Helpers
@@ -108,8 +103,8 @@ extension SupabaseConfig {
         let contentType = fileExtension == "jpg" ? "image/jpeg" : "image/png"
 
         _ = try await userPhotosBucket().upload(
-            path: path,
-            file: imageData,
+            path,
+            data: imageData,
             options: FileOptions(
                 cacheControl: "3600",
                 contentType: contentType,

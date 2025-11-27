@@ -8,6 +8,7 @@ struct MainTabView: View {
         case discover
         case matches
         case duo
+        case thingsToDo
         case profile
 
         var title: String {
@@ -15,6 +16,7 @@ struct MainTabView: View {
             case .discover: return "Discover"
             case .matches: return "Matches"
             case .duo: return "Duo"
+            case .thingsToDo: return "To Do"
             case .profile: return "Profile"
             }
         }
@@ -24,6 +26,7 @@ struct MainTabView: View {
             case .discover: return "rectangle.stack.fill"
             case .matches: return "heart.text.square.fill"
             case .duo: return "person.2.fill"
+            case .thingsToDo: return "map.fill"
             case .profile: return "person.crop.circle.fill"
             }
         }
@@ -50,6 +53,12 @@ struct MainTabView: View {
                 }
                 .tag(Tab.duo)
                 .badge(appState.pendingInvites.count)
+
+            ThingsToDoView()
+                .tabItem {
+                    Label(Tab.thingsToDo.title, systemImage: Tab.thingsToDo.icon)
+                }
+                .tag(Tab.thingsToDo)
 
             ProfileView()
                 .tabItem {

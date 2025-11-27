@@ -67,7 +67,7 @@ class PhotoService {
                 "is_main": AnyEncodable(isMain)
             ]
 
-            try await supabase.client.database
+            try await supabase.client
                 .from("user_photos")
                 .insert(photoRecord)
                 .execute()
@@ -123,7 +123,7 @@ class PhotoService {
     func deletePhoto(photoId: UUID, storagePath: String?) async throws {
         do {
             // 1. Delete from database (trigger will handle storage cleanup)
-            try await supabase.client.database
+            try await supabase.client
                 .from("user_photos")
                 .delete()
                 .eq("id", value: photoId.uuidString)
@@ -146,7 +146,7 @@ class PhotoService {
     /// - Parameter userId: The user's ID
     func deleteAllPhotos(userId: UUID) async throws {
         do {
-            try await supabase.client.database
+            try await supabase.client
                 .from("user_photos")
                 .delete()
                 .eq("user_id", value: userId.uuidString)
@@ -167,7 +167,7 @@ class PhotoService {
     /// - Returns: Array of Photo models
     func getPhotos(userId: UUID) async throws -> [Photo] {
         do {
-            let response: [PhotoDTO] = try await supabase.client.database
+            let response: [PhotoDTO] = try await supabase.client
                 .from("user_photos")
                 .select()
                 .eq("user_id", value: userId.uuidString)
@@ -215,7 +215,7 @@ class PhotoService {
         guard !updates.isEmpty else { return }
 
         do {
-            try await supabase.client.database
+            try await supabase.client
                 .from("user_photos")
                 .update(updates)
                 .eq("id", value: photoId.uuidString)

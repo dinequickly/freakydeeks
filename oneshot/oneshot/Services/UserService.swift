@@ -82,7 +82,7 @@ class UserService {
         print("   Bio: \(bio)")
 
         do {
-            let response = try await supabase.database
+            let response = try await supabase
                 .from("users")
                 .update(update)
                 .eq("id", value: userId.uuidString)
@@ -108,7 +108,7 @@ class UserService {
     /// - Returns: User model
     func getUser(id: UUID) async throws -> User {
         do {
-            let userDTO: UserDTO = try await supabase.database
+            let userDTO: UserDTO = try await supabase
                 .from("users")
                 .select()
                 .eq("id", value: id.uuidString)
@@ -184,7 +184,7 @@ class UserService {
         guard !updates.isEmpty else { return }
 
         do {
-            try await supabase.database
+            try await supabase
                 .from("users")
                 .update(updates)
                 .eq("id", value: userId.uuidString)
@@ -208,7 +208,7 @@ class UserService {
         ]
 
         do {
-            try await supabase.database
+            try await supabase
                 .from("users")
                 .update(updates)
                 .eq("id", value: userId.uuidString)
@@ -226,7 +226,7 @@ class UserService {
 
     private func getPhotos(userId: UUID) async throws -> [Photo] {
         do {
-            let response: [PhotoDTO] = try await supabase.database
+            let response: [PhotoDTO] = try await supabase
                 .from("user_photos")
                 .select()
                 .eq("user_id", value: userId.uuidString)
@@ -254,7 +254,7 @@ class UserService {
     /// Get user's interests
     private func getInterests(userId: UUID) async throws -> [Interest] {
         do {
-            let response: [InterestDTO] = try await supabase.database
+            let response: [InterestDTO] = try await supabase
                 .from("interests")
                 .select()
                 .eq("user_id", value: userId.uuidString)
@@ -290,7 +290,7 @@ class UserService {
         }
 
         do {
-            try await supabase.database
+            try await supabase
                 .from("interests")
                 .insert(records)
                 .execute()
@@ -309,7 +309,7 @@ class UserService {
     ///   - interests: New array of interests
     func updateInterests(userId: UUID, interests: [Interest]) async throws {
         // Delete existing interests
-        try await supabase.database
+        try await supabase
             .from("interests")
             .delete()
             .eq("user_id", value: userId.uuidString)
@@ -326,7 +326,7 @@ class UserService {
     /// Get user's profile prompts
     private func getPrompts(userId: UUID) async throws -> [ProfilePrompt] {
         do {
-            let response: [ProfilePromptDTO] = try await supabase.database
+            let response: [ProfilePromptDTO] = try await supabase
                 .from("profile_prompts")
                 .select()
                 .eq("user_id", value: userId.uuidString)
@@ -362,7 +362,7 @@ class UserService {
         }
 
         do {
-            try await supabase.database
+            try await supabase
                 .from("profile_prompts")
                 .insert(records)
                 .execute()
@@ -381,7 +381,7 @@ class UserService {
     ///   - prompts: New array of prompts
     func updatePrompts(userId: UUID, prompts: [ProfilePrompt]) async throws {
         // Delete existing prompts
-        try await supabase.database
+        try await supabase
             .from("profile_prompts")
             .delete()
             .eq("user_id", value: userId.uuidString)
@@ -400,7 +400,7 @@ class UserService {
     /// - Returns: UserSummary if found
     func searchUserByEmail(email: String) async throws -> UserSummary? {
         do {
-            let response: [UserDTO] = try await supabase.database
+            let response: [UserDTO] = try await supabase
                 .from("users")
                 .select()
                 .eq("email", value: email)

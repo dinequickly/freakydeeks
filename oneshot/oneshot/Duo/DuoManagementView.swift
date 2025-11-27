@@ -516,7 +516,7 @@ struct DuoPreviewView: View {
                     DuoCard(duo: duo, isTop: true)
                         .frame(height: geometry.size.width * 1.3)
                 }
-                .frame(height: UIScreen.main.bounds.width * 1.3)
+                .aspectRatio(1/1.3, contentMode: .fit)
                 .padding(.horizontal)
             }
         }
@@ -676,19 +676,6 @@ struct DuoProfileView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 16) {
-                ActionButton(icon: "xmark", color: .gray, size: 56) {
-                    Task { await appState.swipe(.pass, on: duo) }
-                }
-
-                ActionButton(icon: "heart.fill", color: .pink, size: 56) {
-                    Task { await appState.swipe(.like, on: duo) }
-                }
-            }
-            .padding()
-            .background(.ultraThinMaterial)
-        }
     }
 }
 

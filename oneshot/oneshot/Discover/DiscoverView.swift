@@ -30,13 +30,6 @@ struct DiscoverView: View {
                     Image(systemName: "person.2.fill")
                         .foregroundStyle(.pink.gradient)
                 }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: FilterView()) {
-                        Image(systemName: "slider.horizontal.3")
-                            .foregroundColor(.primary)
-                    }
-                }
             }
             .alert("It's a Match!", isPresented: $showMatchAlert) {
                 Button("Send a Message") {
@@ -419,67 +412,6 @@ struct NoDuoPromptView: View {
             }
         }
         .padding()
-    }
-}
-
-// MARK: - Filter View
-struct FilterView: View {
-    @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        Form {
-            Section("Age Range") {
-                HStack {
-                    Text("\(appState.discoveryPreferences.minAge)")
-                    Slider(
-                        value: Binding(
-                            get: { Double(appState.discoveryPreferences.minAge) },
-                            set: { appState.discoveryPreferences.minAge = Int($0) }
-                        ),
-                        in: 18...50
-                    )
-                    Text("\(appState.discoveryPreferences.maxAge)")
-                }
-
-                HStack {
-                    Text("Max Age")
-                    Spacer()
-                    Slider(
-                        value: Binding(
-                            get: { Double(appState.discoveryPreferences.maxAge) },
-                            set: { appState.discoveryPreferences.maxAge = Int($0) }
-                        ),
-                        in: Double(appState.discoveryPreferences.minAge)...60
-                    )
-                }
-            }
-
-            Section("Distance") {
-                HStack {
-                    Text("Within \(appState.discoveryPreferences.maxDistance) miles")
-                    Spacer()
-                    Slider(
-                        value: Binding(
-                            get: { Double(appState.discoveryPreferences.maxDistance) },
-                            set: { appState.discoveryPreferences.maxDistance = Int($0) }
-                        ),
-                        in: 1...100
-                    )
-                }
-            }
-
-            Section("Show Me") {
-                Picker("Gender Preference", selection: $appState.discoveryPreferences.showMe) {
-                    ForEach(GenderPreference.allCases, id: \.self) { preference in
-                        Text(preference.rawValue).tag(preference)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-        }
-        .navigationTitle("Discovery Filters")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

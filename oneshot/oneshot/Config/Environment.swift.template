@@ -36,6 +36,10 @@ enum Environment {
     /// This is your Client ID reversed
     static let googleReversedClientID = "YOUR_GOOGLE_REVERSED_CLIENT_ID_HERE"
 
+    /// Google Places API Key
+    /// Find: Google Cloud Console → Credentials → API Keys
+    static let googlePlacesAPIKey = "YOUR_GOOGLE_PLACES_API_KEY_HERE"
+
     // MARK: - App Configuration
 
     /// Base URL scheme for deep linking

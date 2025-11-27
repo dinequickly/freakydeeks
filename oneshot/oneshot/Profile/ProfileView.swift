@@ -20,14 +20,6 @@ struct ProfileView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Profile")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundColor(.primary)
-                    }
-                }
-            }
         }
     }
 }
@@ -329,61 +321,114 @@ struct EditProfileView: View {
     }
 }
 
+import PhotosUI
+
 // MARK: - Edit Photos View
 struct EditPhotosView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showImagePicker = false
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var isUploading = false
+    @State private var errorMessage: String?
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(0..<6, id: \.self) { index in
-                    if let photos = appState.currentUser?.photos, index < photos.count {
-                        AsyncImage(url: URL(string: photos[index].url)) { image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                        }
-                        .frame(height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(alignment: .topTrailing) {
-                            Button {
-                                // Delete photo
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.white, .black.opacity(0.5))
+            VStack {
+                if let error = errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding()
+                }
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    ForEach(0..<6, id: \.self) { index in
+                        if let photos = appState.currentUser?.photos, index < photos.count {
+                            // Existing Photo
+                            AsyncImage(url: URL(string: photos[index].url)) { phase in
+                                switch phase {
+                                case .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .overlay(ProgressView())
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                case .failure:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .overlay {
+                                            Image(systemName: "exclamationmark.triangle")
+                                                .foregroundColor(.red)
+                                        }
+                                @unknown default:
+                                    Rectangle().fill(Color.gray.opacity(0.3))
+                                }
                             }
-                            .offset(x: 8, y: -8)
-                        }
-                    } else {
-                        Button {
-                            showImagePicker = true
-                        } label: {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.secondarySystemBackground))
-                                .frame(height: 150)
-                                .overlay {
-                                    VStack {
-                                        Image(systemName: "plus")
-                                            .font(.title2)
-                                        if index == 0 {
-                                            Text("Main")
-                                                .font(.caption)
+                            .frame(height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(alignment: .topTrailing) {
+                                Button {
+                                    Task {
+                                        await appState.deletePhoto(photoId: photos[index].id)
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.white, .black.opacity(0.5))
+                                }
+                                .offset(x: 8, y: -8)
+                            }
+                        } else {
+                            // Add Photo Button
+                            PhotosPicker(selection: $selectedItem, matching: .images) {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.secondarySystemBackground))
+                                    .frame(height: 150)
+                                    .overlay {
+                                        if isUploading && index == (appState.currentUser?.photos.count ?? 0) {
+                                            ProgressView()
+                                        } else {
+                                            VStack {
+                                                Image(systemName: "plus")
+                                                    .font(.title2)
+                                                if index == 0 {
+                                                    Text("Main")
+                                                        .font(.caption)
+                                                }
+                                            }
+                                            .foregroundColor(.pink)
                                         }
                                     }
-                                    .foregroundColor(.pink)
-                                }
+                            }
+                            // Disable if we already have this many photos or if another upload is in progress
+                            // Only enable the NEXT available slot
+                            .disabled(isUploading || index != (appState.currentUser?.photos.count ?? 0))
                         }
                     }
                 }
+                .padding()
             }
-            .padding()
         }
         .navigationTitle("Edit Photos")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: selectedItem) { newItem in
+            if let newItem = newItem {
+                Task {
+                    isUploading = true
+                    errorMessage = nil
+                    do {
+                        if let data = try await newItem.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            await appState.uploadPhoto(image: uiImage)
+                        }
+                    } catch {
+                        errorMessage = "Failed to load image: \(error.localizedDescription)"
+                    }
+                    isUploading = false
+                    selectedItem = nil
+                }
+            }
+        }
     }
 }
 
@@ -392,6 +437,7 @@ struct EditBioView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var bio: String = ""
+    @State private var isSaving = false
 
     var body: some View {
         Form {
@@ -408,10 +454,21 @@ struct EditBioView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    appState.currentUser?.bio = bio
-                    dismiss()
+                Button {
+                    Task {
+                        isSaving = true
+                        await appState.updateProfile(bio: bio)
+                        isSaving = false
+                        dismiss()
+                    }
+                } label: {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Text("Save")
+                    }
                 }
+                .disabled(isSaving)
             }
         }
         .onAppear {
@@ -489,6 +546,7 @@ struct EditEducationView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var university: String = ""
     @State private var major: String = ""
+    @State private var isSaving = false
 
     var body: some View {
         Form {
@@ -504,11 +562,37 @@ struct EditEducationView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    appState.currentUser?.university = university.isEmpty ? nil : university
-                    appState.currentUser?.major = major.isEmpty ? nil : major
-                    dismiss()
+                Button {
+                    Task {
+                        isSaving = true
+                        // Trim whitespace
+                        let newUniversity = university.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let newMajor = major.trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        // Pass nil if empty to clear the field in DB
+                        let uniToSave = newUniversity.isEmpty ? nil : newUniversity
+                        let majorToSave = newMajor.isEmpty ? nil : newMajor
+                        
+                        await appState.updateProfile(university: uniToSave, major: majorToSave)
+                        
+                        // Update local state immediately for UI responsiveness
+                        if var currentUser = appState.currentUser {
+                            currentUser.university = uniToSave
+                            currentUser.major = majorToSave
+                            appState.currentUser = currentUser
+                        }
+                        
+                        isSaving = false
+                        dismiss()
+                    }
+                } label: {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Text("Save")
+                    }
                 }
+                .disabled(isSaving)
             }
         }
         .onAppear {
