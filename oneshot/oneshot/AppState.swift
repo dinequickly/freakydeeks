@@ -442,6 +442,15 @@ class AppState: ObservableObject {
         }
     }
 
+    func fetchMessages(matchId: UUID) async -> [Message] {
+        do {
+            return try await services.matchService.getMessages(matchId: matchId)
+        } catch {
+            print("❌ Fetch messages error: \(error)")
+            return []
+        }
+    }
+
 }
 
 // MARK: - Onboarding Step

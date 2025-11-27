@@ -9,6 +9,11 @@ struct ChatView: View {
     @State private var showDateSuggestion = false
     @FocusState private var isInputFocused: Bool
 
+    private var otherDuo: Duo? {
+        guard let currentDuoId = appState.currentDuo?.id else { return match.duo2 }
+        return match.duo1Id == currentDuoId ? match.duo2 : match.duo1
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Messages
@@ -16,7 +21,7 @@ struct ChatView: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         // Match header
-                        MatchHeaderView(duo: match.duo2)
+                        MatchHeaderView(duo: otherDuo)
                             .padding(.top, 20)
                             .padding(.bottom, 10)
 
@@ -62,11 +67,11 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                ChatNavigationTitle(duo: match.duo2)
+                ChatNavigationTitle(duo: otherDuo)
             }
 
             ToolbarItem(placement: .topBarTrailing) {
-                if let duo = match.duo2 {
+                if let duo = otherDuo {
                     NavigationLink(destination: DuoProfileView(duo: duo)) {
                         Image(systemName: "info.circle")
                     }
@@ -86,7 +91,7 @@ struct ChatView: View {
             }
         }
         .onAppear {
-            loadMockMessages()
+            loadMessages()
         }
     }
 
@@ -110,44 +115,11 @@ struct ChatView: View {
         }
     }
 
-    private func loadMockMessages() {
-        // Add some mock messages for preview
-        guard let currentUser = appState.currentUser,
-              let otherUser1 = match.duo2?.user1,
-              let otherUser2 = match.duo2?.user2 else { return }
-
-        messages = [
-            Message(
-                id: UUID(),
-                matchId: match.id,
-                senderId: otherUser1.id,
-                senderSummary: otherUser1,
-                content: "Hey! We saw you both love hiking too!",
-                messageType: .text,
-                createdAt: Date().addingTimeInterval(-3600),
-                isRead: true
-            ),
-            Message(
-                id: UUID(),
-                matchId: match.id,
-                senderId: otherUser2.id,
-                senderSummary: otherUser2,
-                content: "Yeah we've been looking for hiking buddies!",
-                messageType: .text,
-                createdAt: Date().addingTimeInterval(-3500),
-                isRead: true
-            ),
-            Message(
-                id: UUID(),
-                matchId: match.id,
-                senderId: currentUser.id,
-                senderSummary: UserSummary(from: currentUser),
-                content: "That's awesome! We've been wanting to explore more trails",
-                messageType: .text,
-                createdAt: Date().addingTimeInterval(-3000),
-                isRead: true
-            )
-        ]
+    private func loadMessages() {
+        Task {
+            let fetchedMessages = await appState.fetchMessages(matchId: match.id)
+            messages = fetchedMessages
+        }
     }
 }
 

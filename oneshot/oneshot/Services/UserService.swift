@@ -342,7 +342,7 @@ class UserService {
             return response.map { dto in
                 ProfilePrompt(
                     id: dto.id,
-                    prompt: PromptType(rawValue: dto.promptType) ?? .funFact,
+                    question: dto.question,
                     answer: dto.answer
                 )
             }
@@ -362,7 +362,7 @@ class UserService {
             [
                 "id": AnyEncodable(prompt.id.uuidString),
                 "user_id": AnyEncodable(userId.uuidString),
-                "prompt_type": AnyEncodable(prompt.prompt.rawValue),
+                "question": AnyEncodable(prompt.question),
                 "answer": AnyEncodable(prompt.answer)
             ]
         }
@@ -524,13 +524,13 @@ struct InterestDTO: Codable {
 struct ProfilePromptDTO: Codable {
     let id: UUID
     let userId: UUID
-    let promptType: String
+    let question: String
     let answer: String
 
     enum CodingKeys: String, CodingKey {
         case id
         case userId = "user_id"
-        case promptType = "prompt_type"
+        case question = "prompt_type" // Mapping 'question' to 'prompt_type' column for now
         case answer
     }
 }

@@ -206,7 +206,7 @@ struct ProfileSectionsView: View {
                         if let prompts = appState.currentUser?.prompts, !prompts.isEmpty {
                             ForEach(prompts) { prompt in
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(prompt.prompt.rawValue)
+                                    Text(prompt.question)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Text(prompt.answer)
@@ -223,30 +223,6 @@ struct ProfileSectionsView: View {
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-
-            // Interests section
-            ProfileSection(title: "Interests") {
-                NavigationLink(destination: EditInterestsView()) {
-                    if let interests = appState.currentUser?.interests, !interests.isEmpty {
-                        FlowLayout(spacing: 8) {
-                            ForEach(interests) { interest in
-                                Text("\(interest.emoji) \(interest.name)")
-                                    .font(.caption)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.pink.opacity(0.1))
-                                    .foregroundColor(.pink)
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    } else {
-                        Text("Add your interests")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -500,7 +476,7 @@ struct EditPromptsView: View {
             if let prompts = appState.currentUser?.prompts {
                 ForEach(prompts) { prompt in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(prompt.prompt.rawValue)
+                        Text(prompt.question)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(prompt.answer)
@@ -525,31 +501,6 @@ struct EditPromptsView: View {
                 set: { appState.currentUser?.prompts = $0 }
             ))
         }
-    }
-}
-
-// MARK: - Edit Interests View
-struct EditInterestsView: View {
-    @EnvironmentObject var appState: AppState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Select at least 3 interests")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-
-                InterestPicker(selectedInterests: Binding(
-                    get: { appState.currentUser?.interests ?? [] },
-                    set: { appState.currentUser?.interests = $0 }
-                ))
-                .padding(.horizontal)
-            }
-            .padding(.vertical)
-        }
-        .navigationTitle("Edit Interests")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

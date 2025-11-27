@@ -114,17 +114,17 @@ struct Photo: Identifiable, Codable, Equatable, Hashable {
 // MARK: - Profile Prompt
 struct ProfilePrompt: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
-    var prompt: PromptType
+    var question: String
     var answer: String
 
-    init(id: UUID = UUID(), prompt: PromptType, answer: String) {
+    init(id: UUID = UUID(), question: String, answer: String) {
         self.id = id
-        self.prompt = prompt
+        self.question = question
         self.answer = answer
     }
 }
 
-enum PromptType: String, Codable, CaseIterable {
+enum PredefinedPrompt: String, CaseIterable {
     case idealDoubleDate = "My ideal double date is..."
     case funFact = "A fun fact about me..."
     case lookingFor = "Together we're looking for..."
@@ -133,6 +133,7 @@ enum PromptType: String, Codable, CaseIterable {
     case weClickedBecause = "We clicked because..."
     case togetherWere = "Together we're..."
     case bestMemory = "Our best memory together..."
+    case custom = "Write your own prompt..."
 }
 
 // MARK: - Interest

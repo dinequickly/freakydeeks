@@ -359,55 +359,6 @@ struct OnboardingProfileView: View {
                 }
 
                 // University & Major
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Education (optional)")
-                        .font(.headline)
-
-                    TextField("University", text: $appState.onboardingUniversity)
-                        .textFieldStyle(OnboardingTextFieldStyle())
-
-                    TextField("Major", text: $appState.onboardingMajor)
-                        .textFieldStyle(OnboardingTextFieldStyle())
-                }
-
-                // Interests
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Interests (pick at least 3)")
-                        .font(.headline)
-
-                    InterestPicker(selectedInterests: $appState.onboardingInterests)
-                }
-
-                Spacer(minLength: 100)
-            }
-            .padding(.horizontal, 24)
-        }
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 12) {
-                Button("Back") {
-                    appState.onboardingStep = .photos
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .foregroundColor(.primary)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                OnboardingNextButton(title: "Continue", isEnabled: isValid) {
-                    appState.onboardingStep = .duo
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
-            .background(.ultraThinMaterial)
-        }
-        .sheet(isPresented: $showPromptPicker) {
-            PromptPickerView(prompts: $appState.onboardingPrompts)
-        }
-    }
-}
-
-// MARK: - Step 4: Duo
 struct OnboardingDuoView: View {
     @EnvironmentObject var appState: AppState
 
@@ -572,108 +523,6 @@ struct OnboardingNextButton: View {
     }
 }
 
-// MARK: - Interest Picker
-struct InterestPicker: View {
-    @Binding var selectedInterests: [Interest]
-
-    var body: some View {
-        FlowLayout(spacing: 8) {
-            ForEach(Interest.allInterests) { interest in
-                InterestTag(
-                    interest: interest,
-                    isSelected: selectedInterests.contains(interest)
-                ) {
-                    if selectedInterests.contains(interest) {
-                        selectedInterests.removeAll { $0.id == interest.id }
-                    } else {
-                        selectedInterests.append(interest)
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct InterestTag: View {
-    let interest: Interest
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Text(interest.emoji)
-                Text(interest.name)
-            }
-            .font(.subheadline)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(isSelected ? Color.pink.opacity(0.2) : Color(.secondarySystemBackground))
-            .foregroundColor(isSelected ? .pink : .primary)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(isSelected ? Color.pink : Color.clear, lineWidth: 1.5)
-            )
-        }
-    }
-}
-
-// MARK: - Flow Layout
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(
-            in: proposal.replacingUnspecifiedDimensions().width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(
-            in: bounds.width,
-            subviews: subviews,
-            spacing: spacing
-        )
-
-        for (index, subview) in subviews.enumerated() {
-            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x,
-                                      y: bounds.minY + result.positions[index].y),
-                          proposal: .unspecified)
-        }
-    }
-
-    struct FlowResult {
-        var size: CGSize = .zero
-        var positions: [CGPoint] = []
-
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var x: CGFloat = 0
-            var y: CGFloat = 0
-            var rowHeight: CGFloat = 0
-
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-
-                if x + size.width > maxWidth && x > 0 {
-                    x = 0
-                    y += rowHeight + spacing
-                    rowHeight = 0
-                }
-
-                positions.append(CGPoint(x: x, y: y))
-                rowHeight = max(rowHeight, size.height)
-                x += size.width + spacing
-            }
-
-            self.size = CGSize(width: maxWidth, height: y + rowHeight)
-        }
-    }
-}
-
 // MARK: - Prompt Card
 struct PromptCard: View {
     let prompt: ProfilePrompt
@@ -682,7 +531,7 @@ struct PromptCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(prompt.prompt.rawValue)
+                Text(prompt.question)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -705,7 +554,8 @@ struct PromptCard: View {
 struct PromptPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var prompts: [ProfilePrompt]
-    @State private var selectedPrompt: PromptType?
+    @State private var selectedPrompt: PredefinedPrompt?
+    @State private var customQuestion: String = ""
     @State private var answer: String = ""
 
     var body: some View {
@@ -714,23 +564,32 @@ struct PromptPickerView: View {
                 if let selected = selectedPrompt {
                     Section {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text(selected.rawValue)
-                                .font(.headline)
+                            if selected == .custom {
+                                TextField("Write your own prompt...", text: $customQuestion)
+                                    .font(.headline)
+                            } else {
+                                Text(selected.rawValue)
+                                    .font(.headline)
+                            }
 
                             TextField("Your answer...", text: $answer, axis: .vertical)
                                 .lineLimit(3...6)
 
                             Button("Save") {
-                                prompts.append(ProfilePrompt(prompt: selected, answer: answer))
+                                let question = selected == .custom ? customQuestion : selected.rawValue
+                                prompts.append(ProfilePrompt(question: question, answer: answer))
                                 dismiss()
                             }
-                            .disabled(answer.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .disabled(
+                                answer.trimmingCharacters(in: .whitespaces).isEmpty ||
+                                (selected == .custom && customQuestion.trimmingCharacters(in: .whitespaces).isEmpty)
+                            )
                         }
                         .padding(.vertical, 8)
                     }
                 } else {
                     Section("Choose a prompt") {
-                        ForEach(PromptType.allCases, id: \.self) { prompt in
+                        ForEach(PredefinedPrompt.allCases, id: \.self) { prompt in
                             Button {
                                 selectedPrompt = prompt
                             } label: {
