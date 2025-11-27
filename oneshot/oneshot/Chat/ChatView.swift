@@ -105,7 +105,9 @@ struct ChatView: View {
         )
 
         messages.append(message)
-        appState.sendMessage(to: match.id, content: content, type: type)
+        Task {
+            await appState.sendMessage(to: match.id, content: content, type: type)
+        }
     }
 
     private func loadMockMessages() {

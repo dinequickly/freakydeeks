@@ -1,0 +1,73 @@
+import Foundation
+
+/// Environment configuration template for the OneShot app
+///
+/// SETUP INSTRUCTIONS:
+/// 1. Copy this file to Environment.swift in the same directory
+/// 2. Replace all YOUR_*_HERE placeholders with your actual credentials
+/// 3. Environment.swift is gitignored and will not be committed
+///
+/// To get your credentials:
+/// - Supabase: Dashboard → Settings → API
+/// - Google: Google Cloud Console → Credentials
+
+enum Environment {
+    // MARK: - Supabase Configuration
+
+    /// Your Supabase project URL
+    /// Find: Supabase Dashboard → Settings → API → Project URL
+    /// Format: https://xxxxxxxxxxxxx.supabase.co
+    static let supabaseURL = "YOUR_SUPABASE_URL_HERE"
+
+    /// Your Supabase anonymous/public key
+    /// Find: Supabase Dashboard → Settings → API → Project API keys → anon public
+    /// Safe to use in client applications
+    static let supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY_HERE"
+
+    // MARK: - Google OAuth Configuration
+
+    /// Google OAuth Client ID for iOS
+    /// Find: Google Cloud Console → Credentials → OAuth 2.0 Client IDs → iOS client
+    /// Format: xxxxx-xxxxx.apps.googleusercontent.com
+    static let googleClientID = "YOUR_GOOGLE_CLIENT_ID_HERE"
+
+    /// Google OAuth Reversed Client ID (for URL scheme)
+    /// Format: com.googleusercontent.apps.xxxxx-xxxxx
+    /// This is your Client ID reversed
+    static let googleReversedClientID = "YOUR_GOOGLE_REVERSED_CLIENT_ID_HERE"
+
+    // MARK: - App Configuration
+
+    /// Base URL scheme for deep linking
+    static let appScheme = "oneshot"
+
+    /// API request timeout in seconds
+    static let apiTimeout: TimeInterval = 30
+
+    /// Maximum photo upload size in megabytes
+    static let maxPhotoSizeMB = 10
+
+    // MARK: - Feature Flags
+
+    /// Enable debug logging
+    static let debugLoggingEnabled = true
+
+    /// Enable analytics (set to false for development)
+    static let analyticsEnabled = false
+
+    // MARK: - Validation
+
+    /// Validates that all required environment variables are configured
+    static func validate() -> Bool {
+        let isValid = !supabaseURL.contains("YOUR_") &&
+                      !supabaseAnonKey.contains("YOUR_")
+
+        if !isValid {
+            print("⚠️ WARNING: Environment.swift not configured!")
+            print("Please copy Environment.swift.template to Environment.swift")
+            print("and update it with your credentials from Supabase Dashboard.")
+        }
+
+        return isValid
+    }
+}

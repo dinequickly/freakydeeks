@@ -8,11 +8,17 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if !appState.isOnboardingComplete {
+            if !ServiceContainer.shared.authService.isAuthenticated {
+                // Not logged in - show welcome/auth screen
+                WelcomeView()
+            } else if !appState.isOnboardingComplete {
+                // Logged in but not onboarded
                 OnboardingContainerView()
             } else if appState.currentDuo == nil {
+                // Onboarded but no duo
                 DuoRequiredView()
             } else {
+                // Fully set up - show main app
                 MainTabView()
             }
         }

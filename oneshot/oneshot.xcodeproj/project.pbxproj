@@ -6,13 +6,38 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		37FE74B22ED7A4940074BA08 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74B12ED7A4940074BA08 /* Auth */; };
+		37FE74B42ED7A4940074BA08 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74B32ED7A4940074BA08 /* Functions */; };
+		37FE74B62ED7A4940074BA08 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74B52ED7A4940074BA08 /* PostgREST */; };
+		37FE74B82ED7A4940074BA08 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74B72ED7A4940074BA08 /* Realtime */; };
+		37FE74BA2ED7A4940074BA08 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74B92ED7A4940074BA08 /* Storage */; };
+		37FE74BD2ED7A4AA0074BA08 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74BC2ED7A4AA0074BA08 /* GoogleSignIn */; };
+		37FE74BF2ED7A4AA0074BA08 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74BE2ED7A4AA0074BA08 /* GoogleSignInSwift */; };
+		37FE74C22ED7A4C30074BA08 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74C12ED7A4C30074BA08 /* Kingfisher */; };
+		37FE74C72ED7A9D70074BA08 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 37FE74C62ED7A9D70074BA08 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		37FE743F2ED785250074BA08 /* oneshot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = oneshot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		37FE74C42ED7A7080074BA08 /* Exceptions for "oneshot" folder in "oneshot" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 37FE743E2ED785250074BA08 /* oneshot */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		37FE74412ED785250074BA08 /* oneshot */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				37FE74C42ED7A7080074BA08 /* Exceptions for "oneshot" folder in "oneshot" target */,
+			);
 			path = oneshot;
 			sourceTree = "<group>";
 		};
@@ -23,6 +48,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				37FE74B62ED7A4940074BA08 /* PostgREST in Frameworks */,
+				37FE74B42ED7A4940074BA08 /* Functions in Frameworks */,
+				37FE74BF2ED7A4AA0074BA08 /* GoogleSignInSwift in Frameworks */,
+				37FE74B22ED7A4940074BA08 /* Auth in Frameworks */,
+				37FE74C22ED7A4C30074BA08 /* Kingfisher in Frameworks */,
+				37FE74C72ED7A9D70074BA08 /* Supabase in Frameworks */,
+				37FE74BA2ED7A4940074BA08 /* Storage in Frameworks */,
+				37FE74B82ED7A4940074BA08 /* Realtime in Frameworks */,
+				37FE74BD2ED7A4AA0074BA08 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				37FE74412ED785250074BA08 /* oneshot */,
+				37FE74C52ED7A9D70074BA08 /* Frameworks */,
 				37FE74402ED785250074BA08 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,6 +78,13 @@
 				37FE743F2ED785250074BA08 /* oneshot.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		37FE74C52ED7A9D70074BA08 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -65,6 +107,15 @@
 			);
 			name = oneshot;
 			packageProductDependencies = (
+				37FE74B12ED7A4940074BA08 /* Auth */,
+				37FE74B32ED7A4940074BA08 /* Functions */,
+				37FE74B52ED7A4940074BA08 /* PostgREST */,
+				37FE74B72ED7A4940074BA08 /* Realtime */,
+				37FE74B92ED7A4940074BA08 /* Storage */,
+				37FE74BC2ED7A4AA0074BA08 /* GoogleSignIn */,
+				37FE74BE2ED7A4AA0074BA08 /* GoogleSignInSwift */,
+				37FE74C12ED7A4C30074BA08 /* Kingfisher */,
+				37FE74C62ED7A9D70074BA08 /* Supabase */,
 			);
 			productName = oneshot;
 			productReference = 37FE743F2ED785250074BA08 /* oneshot.app */;
@@ -94,6 +145,11 @@
 			);
 			mainGroup = 37FE74362ED785250074BA08;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				37FE74BB2ED7A4AA0074BA08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				37FE74C02ED7A4C30074BA08 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 37FE74402ED785250074BA08 /* Products */;
 			projectDirPath = "";
@@ -251,11 +307,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 55SQ3S8VSZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = oneshot/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We use your camera so you can take profile photos.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We use your photo library so you can upload profile photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -268,6 +328,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.doubledate.app.oneshot;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -283,11 +344,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 55SQ3S8VSZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = oneshot/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We use your camera so you can take profile photos.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We use your photo library so you can upload profile photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -300,6 +365,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.doubledate.app.oneshot;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -332,6 +398,81 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		37FE74BB2ED7A4AA0074BA08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+		37FE74C02ED7A4C30074BA08 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		37FE74B12ED7A4940074BA08 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		37FE74B32ED7A4940074BA08 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		37FE74B52ED7A4940074BA08 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		37FE74B72ED7A4940074BA08 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		37FE74B92ED7A4940074BA08 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		37FE74BC2ED7A4AA0074BA08 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74BB2ED7A4AA0074BA08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		37FE74BE2ED7A4AA0074BA08 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74BB2ED7A4AA0074BA08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		37FE74C12ED7A4C30074BA08 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74C02ED7A4C30074BA08 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		37FE74C62ED7A9D70074BA08 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 37FE74B02ED7A4940074BA08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 37FE74372ED785250074BA08 /* Project object */;
 }

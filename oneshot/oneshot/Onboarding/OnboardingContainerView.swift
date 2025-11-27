@@ -463,7 +463,9 @@ struct OnboardingDuoView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 12) {
                 Button {
-                    appState.completeOnboarding()
+                    Task {
+                        await appState.completeOnboarding()
+                    }
                 } label: {
                     Label("Invite a Friend", systemImage: "paperplane.fill")
                         .font(.headline)
@@ -475,7 +477,9 @@ struct OnboardingDuoView: View {
                 }
 
                 Button {
-                    appState.completeOnboarding()
+                    Task {
+                        await appState.completeOnboarding()
+                    }
                 } label: {
                     Text("Skip for now")
                         .font(.subheadline)

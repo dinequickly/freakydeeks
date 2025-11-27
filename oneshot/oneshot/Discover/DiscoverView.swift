@@ -52,13 +52,15 @@ struct DiscoverView: View {
     }
 
     private func handleSwipe(_ action: SwipeAction, duo: Duo) {
-        let previousMatchCount = appState.matches.count
-        appState.swipe(action, on: duo)
+        Task {
+            let previousMatchCount = appState.matches.count
+            await appState.swipe(action, on: duo)
 
-        // Check if we got a new match
-        if appState.matches.count > previousMatchCount {
-            matchedDuo = duo
-            showMatchAlert = true
+            // Check if we got a new match
+            if appState.matches.count > previousMatchCount {
+                matchedDuo = duo
+                showMatchAlert = true
+            }
         }
     }
 }

@@ -16,8 +16,12 @@ struct DuoManagementView: View {
                         NoDuoSection(
                             pendingInvites: appState.pendingInvites,
                             showInviteSheet: $showInviteSheet,
-                            onAcceptInvite: { appState.acceptInvite($0) },
-                            onDeclineInvite: { appState.declineInvite($0) }
+                            onAcceptInvite: { invite in
+                                Task { await appState.acceptInvite(invite) }
+                            },
+                            onDeclineInvite: { invite in
+                                Task { await appState.declineInvite(invite) }
+                            }
                         )
                     }
                 }
@@ -124,7 +128,7 @@ struct CurrentDuoSection: View {
             .alert("Leave Duo?", isPresented: $showLeaveAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Leave", role: .destructive) {
-                    appState.leaveDuo()
+                    Task { await appState.leaveDuo() }
                 }
             } message: {
                 Text("Are you sure you want to leave your duo? You won't be able to swipe until you join another duo.")
@@ -592,11 +596,11 @@ struct DuoProfileView: View {
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 16) {
                 ActionButton(icon: "xmark", color: .gray, size: 56) {
-                    appState.swipe(.pass, on: duo)
+                    Task { await appState.swipe(.pass, on: duo) }
                 }
 
                 ActionButton(icon: "heart.fill", color: .pink, size: 56) {
-                    appState.swipe(.like, on: duo)
+                    Task { await appState.swipe(.like, on: duo) }
                 }
             }
             .padding()

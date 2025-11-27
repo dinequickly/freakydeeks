@@ -35,203 +35,296 @@ class AppState: ObservableObject {
     @Published var onboardingMajor: String = ""
     @Published var onboardingInterests: [Interest] = []
 
+    // MARK: - Services
+    private let services = ServiceContainer.shared
+
     // MARK: - Initialization
     init() {
-        loadMockData()
+        Task {
+            await checkAuthAndLoadData()
+        }
+    }
+
+    // MARK: - Data Loading
+
+    /// Check authentication status and load user data if authenticated
+    func checkAuthAndLoadData() async {
+        if services.authService.isAuthenticated {
+            await loadUserData()
+        }
+    }
+
+    /// Load user data from database after authentication
+    func loadUserData() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Get current user from database
+            let user = try await services.userService.getCurrentUser()
+            currentUser = user
+
+            // Check if profile is complete (has name, photos, etc.)
+            if !user.firstName.isEmpty && !user.photos.isEmpty {
+                isOnboardingComplete = true
+            }
+
+            // Load duo if exists
+            if let pairId = user.duoId {
+                currentDuo = try await services.pairService.getPair(id: pairId)
+                matches = try await services.matchService.getCurrentMatches()
+            }
+
+            // Load pending invites
+            pendingInvites = try await services.pairService.getPendingInvites(userId: user.id)
+
+            // Load discovery duos if user has a pair
+            if let pairId = currentDuo?.id {
+                await loadDiscoveryDuos(currentPairId: pairId)
+            }
+
+            isLoading = false
+
+        } catch {
+            print("❌ Load user data error: \(error)")
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
+    }
+
+    /// Load discovery duos for swiping
+    func loadDiscoveryDuos(currentPairId: UUID) async {
+        do {
+            discoveryDuos = try await services.pairService.getDiscoveryPairs(currentPairId: currentPairId)
+        } catch {
+            print("❌ Load discovery duos error: \(error)")
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: - Onboarding
-    func completeOnboarding() {
-        let photos = onboardingPhotos.enumerated().map { index, _ in
-            Photo(url: "photo_\(index)", order: index, isMain: index == 0)
+    func completeOnboarding() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Get current user ID from auth
+            let userId = try services.authService.getCurrentUserId()
+
+            // 1. Create user profile FIRST (so photos can reference it)
+            let user = try await services.userService.createUserProfile(
+                userId: userId,
+                firstName: onboardingFirstName,
+                birthday: onboardingBirthday,
+                gender: onboardingGender,
+                genderPreference: onboardingGenderPreference,
+                bio: onboardingBio,
+                university: onboardingUniversity.isEmpty ? nil : onboardingUniversity,
+                major: onboardingMajor.isEmpty ? nil : onboardingMajor
+            )
+
+            // 2. Upload photos AFTER user exists in database
+            _ = try await services.photoService.uploadPhotos(
+                images: onboardingPhotos,
+                userId: userId
+            )
+
+            // 3. Add interests if any
+            if !onboardingInterests.isEmpty {
+                try await services.userService.addInterests(
+                    userId: userId,
+                    interests: onboardingInterests
+                )
+            }
+
+            // 4. Add prompts if any
+            if !onboardingPrompts.isEmpty {
+                try await services.userService.addPrompts(
+                    userId: userId,
+                    prompts: onboardingPrompts
+                )
+            }
+
+            // 5. Update local state
+            currentUser = user
+            isOnboardingComplete = true
+
+            // 6. Clear onboarding data
+            clearOnboardingData()
+
+            isLoading = false
+            print("✅ Onboarding completed successfully")
+
+        } catch {
+            print("❌ Complete onboarding error: \(error)")
+            errorMessage = error.localizedDescription
+            isLoading = false
         }
+    }
 
-        let user = User(
-            id: UUID(),
-            firstName: onboardingFirstName,
-            birthday: onboardingBirthday,
-            gender: onboardingGender,
-            genderPreference: onboardingGenderPreference,
-            photos: photos,
-            bio: onboardingBio,
-            prompts: onboardingPrompts,
-            university: onboardingUniversity.isEmpty ? nil : onboardingUniversity,
-            major: onboardingMajor.isEmpty ? nil : onboardingMajor,
-            interests: onboardingInterests,
-            duoId: nil,
-            createdAt: Date()
-        )
-
-        currentUser = user
-        isOnboardingComplete = true
+    /// Clear onboarding temporary data
+    private func clearOnboardingData() {
+        onboardingFirstName = ""
+        onboardingBirthday = Calendar.current.date(byAdding: .year, value: -21, to: Date()) ?? Date()
+        onboardingGender = .male
+        onboardingGenderPreference = .everyone
+        onboardingPhotos = []
+        onboardingBio = ""
+        onboardingPrompts = []
+        onboardingUniversity = ""
+        onboardingMajor = ""
+        onboardingInterests = []
     }
 
     // MARK: - Duo Management
-    func sendDuoInvite(to userId: UUID) {
+    func sendDuoInvite(to userId: UUID) async {
         guard let currentUser = currentUser else { return }
+        isLoading = true
+        errorMessage = nil
 
-        let invite = DuoInvite(
-            id: UUID(),
-            fromUserId: currentUser.id,
-            fromUser: UserSummary(from: currentUser),
-            toUserId: userId,
-            toUser: nil,
-            status: .pending,
-            createdAt: Date()
-        )
+        do {
+            let invite = try await services.pairService.sendInvite(
+                fromUserId: currentUser.id,
+                toUserId: userId
+            )
+            outgoingInvites.append(invite)
+            isLoading = false
+            print("✅ Duo invite sent")
 
-        outgoingInvites.append(invite)
+        } catch {
+            print("❌ Send duo invite error: \(error)")
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
     }
 
-    func acceptInvite(_ invite: DuoInvite) {
-        guard let currentUser = currentUser else { return }
+    func acceptInvite(_ invite: DuoInvite) async {
+        guard currentUser != nil else { return }
+        isLoading = true
+        errorMessage = nil
 
-        let duo = Duo(
-            id: UUID(),
-            user1Id: invite.fromUserId,
-            user2Id: currentUser.id,
-            user1: invite.fromUser,
-            user2: UserSummary(from: currentUser),
-            duoBio: "",
-            createdAt: Date()
-        )
+        do {
+            let duo = try await services.pairService.acceptInvite(inviteId: invite.id)
+            self.currentUser?.duoId = duo.id
+            self.currentDuo = duo
+            pendingInvites.removeAll { $0.id == invite.id }
 
-        self.currentUser?.duoId = duo.id
-        self.currentDuo = duo
-        pendingInvites.removeAll { $0.id == invite.id }
+            // Load discovery duos now that user has a pair
+            await loadDiscoveryDuos(currentPairId: duo.id)
+
+            isLoading = false
+            print("✅ Invite accepted")
+
+        } catch {
+            print("❌ Accept invite error: \(error)")
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
     }
 
-    func declineInvite(_ invite: DuoInvite) {
-        pendingInvites.removeAll { $0.id == invite.id }
+    func declineInvite(_ invite: DuoInvite) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            try await services.pairService.declineInvite(inviteId: invite.id)
+            pendingInvites.removeAll { $0.id == invite.id }
+            isLoading = false
+            print("✅ Invite declined")
+
+        } catch {
+            print("❌ Decline invite error: \(error)")
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
     }
 
-    func leaveDuo() {
-        currentUser?.duoId = nil
-        currentDuo = nil
+    func leaveDuo() async {
+        guard let pairId = currentUser?.duoId else { return }
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            try await services.pairService.leavePair(pairId: pairId)
+            currentUser?.duoId = nil
+            currentDuo = nil
+            matches = []
+            discoveryDuos = []
+            isLoading = false
+            print("✅ Left duo")
+
+        } catch {
+            print("❌ Leave duo error: \(error)")
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
     }
 
     // MARK: - Swiping
-    func swipe(_ action: SwipeAction, on duo: Duo) {
+    func swipe(_ action: SwipeAction, on duo: Duo) async {
+        guard let currentPairId = currentDuo?.id,
+              let currentUserId = currentUser?.id else { return }
+
+        // Remove from discovery immediately for better UX
         discoveryDuos.removeAll { $0.id == duo.id }
 
-        if action == .like || action == .superLike {
-            // Check for match (in real app, this would be server-side)
-            let isMatch = Bool.random() // Simulated
+        do {
+            // Record swipe and check for match
+            let match = try await services.matchService.recordSwipe(
+                swiperPairId: currentPairId,
+                swipedPairId: duo.id,
+                swiperUserId: currentUserId,
+                direction: action
+            )
 
-            if isMatch {
-                let match = Match(
-                    id: UUID(),
-                    duo1Id: currentDuo?.id ?? UUID(),
-                    duo2Id: duo.id,
-                    duo1: currentDuo,
-                    duo2: duo,
-                    createdAt: Date(),
-                    lastMessageAt: nil,
-                    lastMessageSummary: nil,
-                    unreadCount: 0
-                )
+            // If it's a match, add to matches list
+            if let match = match {
                 matches.insert(match, at: 0)
+                print("✅ It's a match!")
             }
+
+        } catch {
+            print("❌ Swipe error: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
 
     // MARK: - Messaging
-    func sendMessage(to matchId: UUID, content: String, type: MessageType = .text) {
-        guard let currentUser = currentUser,
-              let matchIndex = matches.firstIndex(where: { $0.id == matchId }) else { return }
+    func sendMessage(to matchId: UUID, content: String, type: MessageType = .text) async {
+        guard let currentUserId = currentUser?.id else { return }
 
-        let messageSummary = MessageSummary(
-            id: UUID(),
-            senderId: currentUser.id,
-            senderName: currentUser.firstName,
-            content: content,
-            messageType: type,
-            createdAt: Date()
-        )
-
-        matches[matchIndex].lastMessageSummary = messageSummary
-        matches[matchIndex].lastMessageAt = Date()
-    }
-
-    // MARK: - Mock Data
-    private func loadMockData() {
-        // Create mock users for discovery
-        let mockUsers: [(String, Gender, [String])] = [
-            ("Alex", .male, ["Travel", "Music", "Fitness"]),
-            ("Jordan", .female, ["Foodie", "Movies", "Art"]),
-            ("Sam", .male, ["Gaming", "Tech", "Coffee"]),
-            ("Taylor", .female, ["Yoga", "Nature", "Reading"]),
-            ("Casey", .nonBinary, ["Photography", "Hiking", "Dogs"]),
-            ("Riley", .female, ["Dancing", "Nightlife", "Fashion"]),
-            ("Morgan", .male, ["Sports", "Beach", "Brunch"]),
-            ("Quinn", .female, ["Cooking", "Wine", "Travel"])
-        ]
-
-        var mockDuos: [Duo] = []
-
-        for i in stride(from: 0, to: mockUsers.count, by: 2) {
-            guard i + 1 < mockUsers.count else { break }
-
-            let user1Data = mockUsers[i]
-            let user2Data = mockUsers[i + 1]
-
-            let user1 = createMockUserSummary(name: user1Data.0, gender: user1Data.1, interestNames: user1Data.2)
-            let user2 = createMockUserSummary(name: user2Data.0, gender: user2Data.1, interestNames: user2Data.2)
-
-            let duo = Duo(
-                id: UUID(),
-                user1Id: user1.id,
-                user2Id: user2.id,
-                user1: user1,
-                user2: user2,
-                duoBio: "Just two friends looking for our perfect match! We love adventures and good vibes.",
-                createdAt: Date()
+        do {
+            // Send message via MatchService
+            try await services.matchService.sendMessage(
+                matchId: matchId,
+                senderId: currentUserId,
+                content: content,
+                type: type
             )
 
-            mockDuos.append(duo)
+            // Update local match state
+            if let matchIndex = matches.firstIndex(where: { $0.id == matchId }) {
+                let messageSummary = MessageSummary(
+                    id: UUID(),
+                    senderId: currentUserId,
+                    senderName: currentUser?.firstName ?? "",
+                    content: content,
+                    messageType: type,
+                    createdAt: Date()
+                )
+
+                matches[matchIndex].lastMessageSummary = messageSummary
+                matches[matchIndex].lastMessageAt = Date()
+            }
+
+            print("✅ Message sent")
+
+        } catch {
+            print("❌ Send message error: \(error)")
+            errorMessage = error.localizedDescription
         }
-
-        discoveryDuos = mockDuos
-
-        // Create mock pending invites
-        let inviteUser = createMockUserSummary(name: "Jamie", gender: .female, interestNames: ["Music", "Travel"])
-        pendingInvites = [
-            DuoInvite(
-                id: UUID(),
-                fromUserId: inviteUser.id,
-                fromUser: inviteUser,
-                toUserId: UUID(),
-                toUser: nil,
-                status: .pending,
-                createdAt: Date().addingTimeInterval(-3600)
-            )
-        ]
     }
 
-    private func createMockUserSummary(name: String, gender: Gender, interestNames: [String]) -> UserSummary {
-        let interests = interestNames.compactMap { name in
-            Interest.allInterests.first { $0.name == name }
-        }
-
-        let age = Int.random(in: 21...28)
-
-        return UserSummary(
-            id: UUID(),
-            firstName: name,
-            age: age,
-            photos: [
-                Photo(url: "https://picsum.photos/400/600?random=\(Int.random(in: 1...1000))", order: 0, isMain: true),
-                Photo(url: "https://picsum.photos/400/600?random=\(Int.random(in: 1...1000))", order: 1),
-                Photo(url: "https://picsum.photos/400/600?random=\(Int.random(in: 1...1000))", order: 2)
-            ],
-            bio: "Living life one adventure at a time",
-            university: ["NYU", "Columbia", "UCLA", "Stanford"].randomElement(),
-            interests: interests,
-            prompts: [
-                ProfilePrompt(prompt: .idealDoubleDate, answer: "Trying a new restaurant and then hitting up a fun bar!")
-            ]
-        )
-    }
 }
 
 // MARK: - Onboarding Step
