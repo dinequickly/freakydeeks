@@ -275,6 +275,18 @@ struct ProfileSectionsView: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            // Location section
+            ProfileSection(title: "Location") {
+                NavigationLink(destination: EditLocationView()) {
+                    HStack {
+                        Label(appState.currentUser?.location.displayName ?? "London", systemImage: "mappin.and.ellipse")
+                            .font(.subheadline)
+                        Spacer()
+                    }
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
@@ -315,6 +327,7 @@ struct EditProfileView: View {
             NavigationLink("Prompts", destination: EditPromptsView())
             NavigationLink("Interests", destination: EditInterestsView())
             NavigationLink("Education", destination: EditEducationView())
+            NavigationLink("Location", destination: EditLocationView())
         }
         .navigationTitle("Edit Profile")
         .navigationBarTitleDisplayMode(.inline)
@@ -568,20 +581,20 @@ struct EditEducationView: View {
                         // Trim whitespace
                         let newUniversity = university.trimmingCharacters(in: .whitespacesAndNewlines)
                         let newMajor = major.trimmingCharacters(in: .whitespacesAndNewlines)
-                        
+
                         // Pass nil if empty to clear the field in DB
                         let uniToSave = newUniversity.isEmpty ? nil : newUniversity
                         let majorToSave = newMajor.isEmpty ? nil : newMajor
-                        
+
                         await appState.updateProfile(university: uniToSave, major: majorToSave)
-                        
+
                         // Update local state immediately for UI responsiveness
                         if var currentUser = appState.currentUser {
                             currentUser.university = uniToSave
                             currentUser.major = majorToSave
                             appState.currentUser = currentUser
                         }
-                        
+
                         isSaving = false
                         dismiss()
                     }
@@ -598,6 +611,71 @@ struct EditEducationView: View {
         .onAppear {
             university = appState.currentUser?.university ?? ""
             major = appState.currentUser?.major ?? ""
+        }
+    }
+}
+
+// MARK: - Edit Location View
+struct EditLocationView: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedLocation: UserLocation = .london
+    @State private var isSaving = false
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Location", selection: $selectedLocation) {
+                    ForEach(UserLocation.allCases, id: \.self) { location in
+                        HStack {
+                            Text(location.displayName)
+                            Spacer()
+                            if location == .london {
+                                Text("🇬🇧")
+                            } else {
+                                Text("🇺🇸")
+                            }
+                        }
+                        .tag(location)
+                    }
+                }
+                .pickerStyle(.inline)
+            } header: {
+                Text("Choose your location")
+            } footer: {
+                Text("This determines which area's activities and venues you'll see in Things to Do.")
+            }
+        }
+        .navigationTitle("Location")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    Task {
+                        isSaving = true
+                        await appState.updateProfile(location: selectedLocation)
+
+                        // Update local state immediately for UI responsiveness
+                        if var currentUser = appState.currentUser {
+                            currentUser.location = selectedLocation
+                            appState.currentUser = currentUser
+                        }
+
+                        isSaving = false
+                        dismiss()
+                    }
+                } label: {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Text("Save")
+                    }
+                }
+                .disabled(isSaving)
+            }
+        }
+        .onAppear {
+            selectedLocation = appState.currentUser?.location ?? .london
         }
     }
 }

@@ -64,12 +64,12 @@ class PlacesService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    func fetchPlaces(category: PlaceCategory) async {
+    func fetchPlaces(category: PlaceCategory, location: UserLocation = .london) async {
         isLoading = true
         errorMessage = nil
-        
+
         let apiKey = AppEnvironment.googlePlacesAPIKey
-        
+
         guard !apiKey.contains("YOUR_") else {
             self.errorMessage = "API Key Missing"
             self.isLoading = false
@@ -79,7 +79,7 @@ class PlacesService: ObservableObject {
         // Construct URL components for GET request (Legacy API uses GET)
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
-            URLQueryItem(name: "query", value: "\(category.query) in Spitalfields, London"),
+            URLQueryItem(name: "query", value: "\(category.query) in \(location.searchLocation)"),
             URLQueryItem(name: "key", value: apiKey)
         ]
         

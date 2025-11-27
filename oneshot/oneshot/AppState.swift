@@ -104,21 +104,22 @@ class AppState: ObservableObject {
     }
 
     // MARK: - Profile Management
-    
-    func updateProfile(firstName: String? = nil, bio: String? = nil, university: String? = nil, major: String? = nil) async {
+
+    func updateProfile(firstName: String? = nil, bio: String? = nil, university: String? = nil, major: String? = nil, location: UserLocation? = nil) async {
         guard let userId = currentUser?.id else { return }
         isLoading = true
         errorMessage = nil
-        
+
         do {
             try await services.userService.updateUserProfile(
                 userId: userId,
                 firstName: firstName,
                 bio: bio,
                 university: university,
-                major: major
+                major: major,
+                location: location
             )
-            
+
             // Reload user to update UI
             let updatedUser = try await services.userService.getUser(id: userId)
             currentUser = updatedUser

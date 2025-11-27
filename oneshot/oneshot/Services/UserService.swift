@@ -134,6 +134,7 @@ class UserService {
                 major: userDTO.major,
                 interests: interests,
                 duoId: userDTO.currentPairId,
+                location: UserLocation(rawValue: userDTO.location ?? "london") ?? .london,
                 createdAt: userDTO.createdAt
             )
 
@@ -159,12 +160,14 @@ class UserService {
     ///   - bio: New bio (optional)
     ///   - university: New university (optional)
     ///   - major: New major (optional)
+    ///   - location: New location (optional)
     func updateUserProfile(
         userId: UUID,
         firstName: String? = nil,
         bio: String? = nil,
         university: String? = nil,
-        major: String? = nil
+        major: String? = nil,
+        location: UserLocation? = nil
     ) async throws {
         var updates: [String: AnyEncodable] = [:]
 
@@ -179,6 +182,9 @@ class UserService {
         }
         if let maj = major {
             updates["major"] = AnyEncodable(maj)
+        }
+        if let loc = location {
+            updates["location"] = AnyEncodable(loc.rawValue)
         }
 
         guard !updates.isEmpty else { return }
@@ -453,6 +459,7 @@ struct UserDTO: Codable {
     let university: String?
     let major: String?
     let currentPairId: UUID?
+    let location: String?
     let isVerified: Bool
     let createdAt: Date
 
@@ -467,6 +474,7 @@ struct UserDTO: Codable {
         case university
         case major
         case currentPairId = "current_pair_id"
+        case location
         case isVerified = "is_verified"
         case createdAt = "created_at"
     }
@@ -493,6 +501,7 @@ struct UserDTO: Codable {
         university = try container.decodeIfPresent(String.self, forKey: .university)
         major = try container.decodeIfPresent(String.self, forKey: .major)
         currentPairId = try container.decodeIfPresent(UUID.self, forKey: .currentPairId)
+        location = try container.decodeIfPresent(String.self, forKey: .location)
         isVerified = try container.decode(Bool.self, forKey: .isVerified)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
     }

@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct ThingsToDoView: View {
+    @EnvironmentObject var appState: AppState
     @ObservedObject var placesService = ServiceContainer.shared.placesService
     @State private var selectedCategory: PlaceCategory = .cheapEats
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -11,7 +12,7 @@ struct ThingsToDoView: View {
                 HStack {
                     Image(systemName: "location.fill")
                         .foregroundColor(.blue)
-                    Text("Spitalfields, London")
+                    Text(appState.currentUser?.location.searchLocation ?? "London")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     Spacer()
@@ -75,7 +76,10 @@ struct ThingsToDoView: View {
                         }
                         .listStyle(.plain)
                         .refreshable {
-                            await placesService.fetchPlaces(category: selectedCategory)
+                            await placesService.fetchPlaces(
+                                category: selectedCategory,
+                                location: appState.currentUser?.location ?? .london
+                            )
                         }
                     }
                 }
@@ -94,7 +98,10 @@ struct ThingsToDoView: View {
     private func selectCategory(_ category: PlaceCategory) {
         selectedCategory = category
         Task {
-            await placesService.fetchPlaces(category: category)
+            await placesService.fetchPlaces(
+                category: category,
+                location: appState.currentUser?.location ?? .london
+            )
         }
     }
 }

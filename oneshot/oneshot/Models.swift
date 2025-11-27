@@ -15,6 +15,7 @@ struct User: Identifiable, Codable, Equatable {
     var major: String?
     var interests: [Interest]
     var duoId: UUID?  // Reference by ID only to avoid circular reference
+    var location: UserLocation
     var createdAt: Date
 
     var age: Int {
@@ -73,6 +74,26 @@ enum GenderPreference: String, Codable, CaseIterable {
     case men = "Men"
     case women = "Women"
     case everyone = "Everyone"
+}
+
+// MARK: - User Location
+enum UserLocation: String, Codable, CaseIterable {
+    case london = "london"
+    case chicago = "chicago"
+
+    var displayName: String {
+        switch self {
+        case .london: return "London"
+        case .chicago: return "Chicago"
+        }
+    }
+
+    var searchLocation: String {
+        switch self {
+        case .london: return "Spitalfields, London"
+        case .chicago: return "University of Chicago, Chicago"
+        }
+    }
 }
 
 // MARK: - Photo
