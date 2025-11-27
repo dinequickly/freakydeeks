@@ -722,6 +722,40 @@ struct ProfileCardPreview: View {
     }
 }
 
+// MARK: - Edit Interests View
+struct EditInterestsView: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State private var interests: [Interest] = []
+
+    var body: some View {
+        Form {
+            Section {
+                Text("Edit Interests functionality goes here.")
+            } header: {
+                Text("Interests")
+            } footer: {
+                Text("Select your interests to help us match you better.")
+            }
+        }
+        .navigationTitle("Edit Interests")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    // For now, no actual saving logic.
+                    // In a real implementation, you would update appState.currentUser.interests
+                    // Example: appState.currentUser?.interests = interests
+                    dismiss()
+                }
+            }
+        }
+        .onAppear {
+            interests = appState.currentUser?.interests ?? []
+        }
+    }
+}
+
 #Preview {
     ProfileView()
         .environmentObject(AppState())

@@ -359,6 +359,11 @@ struct OnboardingProfileView: View {
                 }
 
                 // University & Major
+            } // Closes VStack (line 306)
+        } // Closes ScrollView (line 305)
+    } // Closes body (line 304)
+} // Closes struct OnboardingProfileView (line 295)
+
 struct OnboardingDuoView: View {
     @EnvironmentObject var appState: AppState
 

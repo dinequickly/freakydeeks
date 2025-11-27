@@ -709,9 +709,9 @@ struct UserBioSection: View {
                     .foregroundStyle(.secondary)
             }
 
-            ForEach(user.prompts) { prompt in
+            ForEach(user.prompts, id: \.id) { prompt in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(prompt.prompt.rawValue)
+                    Text(prompt.question)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(prompt.answer)
@@ -722,6 +722,24 @@ struct UserBioSection: View {
                 .background(Color(.secondarySystemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+        }
+    }
+}
+
+// MARK: - FlowLayout Placeholder
+struct FlowLayout<Content: View>: View {
+    let spacing: CGFloat
+    let content: Content
+
+    init(spacing: CGFloat, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+
+    var body: some View {
+        // A simple VStack for now, does not implement actual flow layout logic
+        VStack(alignment: .leading, spacing: spacing) {
+            content
         }
     }
 }
