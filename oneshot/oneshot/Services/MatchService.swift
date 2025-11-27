@@ -24,8 +24,8 @@ class MatchService {
     /// Record a swipe action
     /// - Parameters:
     ///   - swiperPairId: The pair doing the swiping
-    ///   - swipedPairId: The pair being swiped on
     ///   - swiperUserId: The specific user who swiped
+    ///   - swipedPairId: The pair being swiped on
     ///   - direction: Swipe direction (left, right, super)
     /// - Returns: Match if both pairs swiped right, nil otherwise
     func recordSwipe(
@@ -52,7 +52,7 @@ class MatchService {
         ]
 
         do {
-            try await supabase.database
+            try await supabase
                 .from("swipes")
                 .insert(swipeData)
                 .execute()
@@ -80,12 +80,12 @@ class MatchService {
     private func checkForMatch(pair1Id: UUID, pair2Id: UUID) async throws -> Match? {
         do {
             // Check if pair2 has swiped right on pair1
-            let reciprocalSwipes: [SwipeDTO] = try await supabase.database
+            let reciprocalSwipes: [SwipeDTO] = try await supabase
                 .from("swipes")
                 .select()
                 .eq("swiper_pair_id", value: pair2Id.uuidString)
                 .eq("swiped_pair_id", value: pair1Id.uuidString)
-                .in("direction", value: ["right", "super"])
+                .in("direction", values: ["right", "super"])
                 .execute()
                 .value
 
@@ -116,7 +116,7 @@ class MatchService {
         ]
 
         do {
-            let response: MatchDTO = try await supabase.database
+            let response: MatchDTO = try await supabase
                 .from("matches")
                 .insert(matchData)
                 .select()
@@ -142,7 +142,7 @@ class MatchService {
     /// - Returns: Match model
     func getMatch(id: UUID) async throws -> Match {
         do {
-            let matchDTO: MatchDTO = try await supabase.database
+            let matchDTO: MatchDTO = try await supabase
                 .from("matches")
                 .select()
                 .eq("id", value: id.uuidString)
@@ -182,7 +182,7 @@ class MatchService {
     /// - Returns: Array of Match models
     func getMatches(pairId: UUID) async throws -> [Match] {
         do {
-            let response: [MatchDTO] = try await supabase.database
+            let response: [MatchDTO] = try await supabase
                 .from("matches")
                 .select()
                 .or("pair1_id.eq.\(pairId.uuidString),pair2_id.eq.\(pairId.uuidString)")
@@ -240,7 +240,7 @@ class MatchService {
     /// - Parameter matchId: Match's ID
     func unmatch(matchId: UUID) async throws {
         do {
-            try await supabase.database
+            try await supabase
                 .from("matches")
                 .update(["status": AnyEncodable("archived")])
                 .eq("id", value: matchId.uuidString)
@@ -258,7 +258,7 @@ class MatchService {
     /// - Parameter matchId: Match's ID
     func blockMatch(matchId: UUID) async throws {
         do {
-            try await supabase.database
+            try await supabase
                 .from("matches")
                 .update(["status": AnyEncodable("blocked")])
                 .eq("id", value: matchId.uuidString)
@@ -279,7 +279,7 @@ class MatchService {
     /// - Returns: MessageSummary if exists
     private func getLastMessage(matchId: UUID) async throws -> MessageSummary? {
         do {
-            let response: [MessageDTO] = try await supabase.database
+            let response: [MessageDTO] = try await supabase
                 .from("messages")
                 .select()
                 .eq("match_id", value: matchId.uuidString)
@@ -329,13 +329,13 @@ class MatchService {
         ]
 
         do {
-            try await supabase.database
+            try await supabase
                 .from("messages")
                 .insert(messageData)
                 .execute()
 
             // Update match's last_message_at
-            try await supabase.database
+            try await supabase
                 .from("matches")
                 .update(["last_message_at": AnyEncodable(ISO8601DateFormatter().string(from: Date()))])
                 .eq("id", value: matchId.uuidString)
@@ -356,7 +356,7 @@ class MatchService {
     /// - Returns: Array of Message models
     func getMessages(matchId: UUID, limit: Int = 50) async throws -> [Message] {
         do {
-            let response: [MessageDTO] = try await supabase.database
+            let response: [MessageDTO] = try await supabase
                 .from("messages")
                 .select()
                 .eq("match_id", value: matchId.uuidString)
@@ -399,10 +399,10 @@ class MatchService {
         do {
             let ids = messageIds.map { $0.uuidString }
 
-            try await supabase.database
+            try await supabase
                 .from("messages")
                 .update(["is_read": AnyEncodable(true)])
-                .in("id", value: ids)
+                .in("id", values: ids)
                 .execute()
 
             print("✅ Messages marked as read: \(messageIds.count)")

@@ -59,7 +59,7 @@ class PairService {
         )
 
         do {
-            let response: PairInviteDTO = try await supabase.database
+            let response: PairInviteDTO = try await supabase
                 .from("pair_invites")
                 .insert(inviteData)
                 .select()
@@ -95,7 +95,7 @@ class PairService {
     /// - Returns: Array of pending DuoInvites
     func getPendingInvites(userId: UUID) async throws -> [DuoInvite] {
         do {
-            let response: [PairInviteDTO] = try await supabase.database
+            let response: [PairInviteDTO] = try await supabase
                 .from("pair_invites")
                 .select()
                 .eq("to_user_id", value: userId.uuidString)
@@ -134,7 +134,7 @@ class PairService {
     /// - Returns: Array of sent DuoInvites
     func getSentInvites(userId: UUID) async throws -> [DuoInvite] {
         do {
-            let response: [PairInviteDTO] = try await supabase.database
+            let response: [PairInviteDTO] = try await supabase
                 .from("pair_invites")
                 .select()
                 .eq("from_user_id", value: userId.uuidString)
@@ -174,7 +174,7 @@ class PairService {
     func acceptInvite(inviteId: UUID) async throws -> Duo {
         do {
             // Get invite details
-            let inviteDTO: PairInviteDTO = try await supabase.database
+            let inviteDTO: PairInviteDTO = try await supabase
                 .from("pair_invites")
                 .select()
                 .eq("id", value: inviteId.uuidString)
@@ -190,7 +190,7 @@ class PairService {
                 "duo_bio": AnyEncodable("")
             ]
 
-            let pairResponse: PairDTO = try await supabase.database
+            let pairResponse: PairDTO = try await supabase
                 .from("pairs")
                 .insert(pairData)
                 .select()
@@ -199,7 +199,7 @@ class PairService {
                 .value
 
             // Update invite status
-            try await supabase.database
+            try await supabase
                 .from("pair_invites")
                 .update(["status": AnyEncodable("accepted")])
                 .eq("id", value: inviteId.uuidString)
@@ -224,7 +224,7 @@ class PairService {
     /// - Parameter inviteId: Invite's ID
     func declineInvite(inviteId: UUID) async throws {
         do {
-            try await supabase.database
+            try await supabase
                 .from("pair_invites")
                 .update(["status": AnyEncodable("declined")])
                 .eq("id", value: inviteId.uuidString)
@@ -242,7 +242,7 @@ class PairService {
     /// - Parameter inviteId: Invite's ID
     func cancelInvite(inviteId: UUID) async throws {
         do {
-            try await supabase.database
+            try await supabase
                 .from("pair_invites")
                 .delete()
                 .eq("id", value: inviteId.uuidString)
@@ -263,7 +263,7 @@ class PairService {
     /// - Returns: Duo model
     func getPair(id: UUID) async throws -> Duo {
         do {
-            let pairDTO: PairDTO = try await supabase.database
+            let pairDTO: PairDTO = try await supabase
                 .from("pairs")
                 .select()
                 .eq("id", value: id.uuidString)
@@ -309,7 +309,7 @@ class PairService {
     ///   - duoBio: New duo bio
     func updateDuoBio(pairId: UUID, duoBio: String) async throws {
         do {
-            try await supabase.database
+            try await supabase
                 .from("pairs")
                 .update(["duo_bio": AnyEncodable(duoBio)])
                 .eq("id", value: pairId.uuidString)
@@ -335,7 +335,7 @@ class PairService {
             try await userService.updateCurrentPair(userId: pair.user2Id, pairId: nil)
 
             // Update pair status to inactive (don't delete for history)
-            try await supabase.database
+            try await supabase
                 .from("pairs")
                 .update(["status": AnyEncodable("inactive")])
                 .eq("id", value: pairId.uuidString)
@@ -359,7 +359,7 @@ class PairService {
     func getDiscoveryPairs(currentPairId: UUID, limit: Int = 20) async throws -> [Duo] {
         do {
             // Get pairs that haven't been swiped on yet
-            let response: [PairDTO] = try await supabase.database
+            let response: [PairDTO] = try await supabase
                 .from("pairs")
                 .select()
                 .eq("status", value: "active")
@@ -372,7 +372,7 @@ class PairService {
 
             for pairDTO in response {
                 // Check if already swiped
-                let swipeCount: [SwipeCheckDTO] = try await supabase.database
+                let swipeCount: [SwipeCheckDTO] = try await supabase
                     .from("swipes")
                     .select("id")
                     .eq("swiper_pair_id", value: currentPairId.uuidString)

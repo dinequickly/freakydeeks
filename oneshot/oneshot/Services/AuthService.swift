@@ -221,7 +221,7 @@ class AuthService: ObservableObject {
         do {
             // Delete user data first (cascade will handle related records)
             if let userId = currentUserId {
-                try await supabase.database
+                try await supabase
                     .from("users")
                     .delete()
                     .eq("id", value: userId.uuidString)
