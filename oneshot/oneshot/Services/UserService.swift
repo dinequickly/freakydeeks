@@ -214,21 +214,27 @@ class UserService {
     // MARK: - Photos
 
     private func getPhotos(userId: UUID) async throws -> [Photo] {
-        let response: [PhotoDTO] = try await supabase.database
-            .from("user_photos")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .order("order_index")
-            .execute()
-            .value
+        do {
+            let response: [PhotoDTO] = try await supabase.database
+                .from("user_photos")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .order("order_index")
+                .execute()
+                .value
 
-        return response.map { dto in
-            Photo(
-                id: dto.id,
-                url: dto.url,
-                order: dto.orderIndex,
-                isMain: dto.isMain
-            )
+            return response.map { dto in
+                Photo(
+                    id: dto.id,
+                    url: dto.url,
+                    order: dto.orderIndex,
+                    isMain: dto.isMain
+                )
+            }
+        } catch {
+            // Return empty array if no photos found (not an error condition)
+            print("ℹ️ No photos found for user: \(userId)")
+            return []
         }
     }
 
@@ -236,19 +242,25 @@ class UserService {
 
     /// Get user's interests
     private func getInterests(userId: UUID) async throws -> [Interest] {
-        let response: [InterestDTO] = try await supabase.database
-            .from("interests")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-            .value
+        do {
+            let response: [InterestDTO] = try await supabase.database
+                .from("interests")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+                .value
 
-        return response.map { dto in
-            Interest(
-                id: dto.id,
-                name: dto.name,
-                emoji: dto.emoji
-            )
+            return response.map { dto in
+                Interest(
+                    id: dto.id,
+                    name: dto.name,
+                    emoji: dto.emoji
+                )
+            }
+        } catch {
+            // Return empty array if no interests found
+            print("ℹ️ No interests found for user: \(userId)")
+            return []
         }
     }
 
@@ -302,19 +314,25 @@ class UserService {
 
     /// Get user's profile prompts
     private func getPrompts(userId: UUID) async throws -> [ProfilePrompt] {
-        let response: [ProfilePromptDTO] = try await supabase.database
-            .from("profile_prompts")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-            .value
+        do {
+            let response: [ProfilePromptDTO] = try await supabase.database
+                .from("profile_prompts")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+                .value
 
-        return response.map { dto in
-            ProfilePrompt(
-                id: dto.id,
-                prompt: PromptType(rawValue: dto.promptType) ?? .funFact,
-                answer: dto.answer
-            )
+            return response.map { dto in
+                ProfilePrompt(
+                    id: dto.id,
+                    prompt: PromptType(rawValue: dto.promptType) ?? .funFact,
+                    answer: dto.answer
+                )
+            }
+        } catch {
+            // Return empty array if no prompts found
+            print("ℹ️ No prompts found for user: \(userId)")
+            return []
         }
     }
 

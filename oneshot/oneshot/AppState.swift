@@ -64,8 +64,9 @@ class AppState: ObservableObject {
             let user = try await services.userService.getCurrentUser()
             currentUser = user
 
-            // Check if profile is complete (has name, photos, etc.)
-            if !user.firstName.isEmpty && !user.photos.isEmpty {
+            // Check if profile is complete (minimum: has name and bio)
+            // Photos are optional - user can add them later
+            if !user.firstName.isEmpty && !user.bio.isEmpty {
                 isOnboardingComplete = true
             }
 
@@ -107,11 +108,16 @@ class AppState: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        do {
-            // Get current user ID from auth
-            let userId = try services.authService.getCurrentUserId()
+        // Get current user ID from auth
+        guard let userId = try? services.authService.getCurrentUserId() else {
+            print("❌ Cannot complete onboarding: User not authenticated")
+            errorMessage = "Not authenticated"
+            isLoading = false
+            return
+        }
 
-            // 1. Create user profile FIRST (so photos can reference it)
+        // 1. Create user profile FIRST (so photos can reference it)
+        do {
             let user = try await services.userService.createUserProfile(
                 userId: userId,
                 firstName: onboardingFirstName,
@@ -123,43 +129,64 @@ class AppState: ObservableObject {
                 major: onboardingMajor.isEmpty ? nil : onboardingMajor
             )
 
-            // 2. Upload photos AFTER user exists in database
-            _ = try await services.photoService.uploadPhotos(
-                images: onboardingPhotos,
-                userId: userId
-            )
+            currentUser = user
+            print("✅ User profile created successfully")
+        } catch {
+            print("❌ Create profile error: \(error)")
+            errorMessage = "Failed to create profile: \(error.localizedDescription)"
+            isLoading = false
+            return
+        }
 
-            // 3. Add interests if any
-            if !onboardingInterests.isEmpty {
+        // 2. Upload photos AFTER user exists in database
+        if !onboardingPhotos.isEmpty {
+            do {
+                _ = try await services.photoService.uploadPhotos(
+                    images: onboardingPhotos,
+                    userId: userId
+                )
+                print("✅ Photos uploaded successfully")
+            } catch {
+                print("❌ Photo upload error: \(error)")
+                // Don't fail onboarding if photos fail - they can add them later
+                errorMessage = "Photos failed to upload, but you can add them in settings"
+            }
+        }
+
+        // 3. Add interests if any
+        if !onboardingInterests.isEmpty {
+            do {
                 try await services.userService.addInterests(
                     userId: userId,
                     interests: onboardingInterests
                 )
+                print("✅ Interests added successfully")
+            } catch {
+                print("❌ Add interests error: \(error)")
+                // Non-critical error
             }
+        }
 
-            // 4. Add prompts if any
-            if !onboardingPrompts.isEmpty {
+        // 4. Add prompts if any
+        if !onboardingPrompts.isEmpty {
+            do {
                 try await services.userService.addPrompts(
                     userId: userId,
                     prompts: onboardingPrompts
                 )
+                print("✅ Prompts added successfully")
+            } catch {
+                print("❌ Add prompts error: \(error)")
+                // Non-critical error
             }
-
-            // 5. Update local state
-            currentUser = user
-            isOnboardingComplete = true
-
-            // 6. Clear onboarding data
-            clearOnboardingData()
-
-            isLoading = false
-            print("✅ Onboarding completed successfully")
-
-        } catch {
-            print("❌ Complete onboarding error: \(error)")
-            errorMessage = error.localizedDescription
-            isLoading = false
         }
+
+        // 5. Mark onboarding as complete and clear temporary data
+        isOnboardingComplete = true
+        clearOnboardingData()
+        isLoading = false
+
+        print("✅ Onboarding completed successfully")
     }
 
     /// Clear onboarding temporary data
